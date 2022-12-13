@@ -10,6 +10,8 @@
 		D37E25802947E01C0090A8D6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37E257F2947E01C0090A8D6 /* AppDelegate.swift */; };
 		D37E25822947E01F0090A8D6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D37E25812947E01F0090A8D6 /* Assets.xcassets */; };
 		D37E25852947E01F0090A8D6 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D37E25832947E01F0090A8D6 /* MainMenu.xib */; };
+		D37E258D2947E1BA0090A8D6 /* AppController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D37E258C2947E1BA0090A8D6 /* AppController.swift */; };
+		D37E25912947E2F40090A8D6 /* C57_91_Functions.c in Sources */ = {isa = PBXBuildFile; fileRef = D37E25902947E2F40090A8D6 /* C57_91_Functions.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -18,6 +20,10 @@
 		D37E25812947E01F0090A8D6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D37E25842947E01F0090A8D6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D37E25862947E01F0090A8D6 /* OverloadTemperatures.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OverloadTemperatures.entitlements; sourceTree = "<group>"; };
+		D37E258C2947E1BA0090A8D6 /* AppController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppController.swift; sourceTree = "<group>"; };
+		D37E258E2947E2F40090A8D6 /* OverloadTemperatures-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "OverloadTemperatures-Bridging-Header.h"; sourceTree = "<group>"; };
+		D37E258F2947E2F40090A8D6 /* C57_91_Functions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = C57_91_Functions.h; sourceTree = "<group>"; };
+		D37E25902947E2F40090A8D6 /* C57_91_Functions.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = C57_91_Functions.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,9 +57,13 @@
 			isa = PBXGroup;
 			children = (
 				D37E257F2947E01C0090A8D6 /* AppDelegate.swift */,
+				D37E258C2947E1BA0090A8D6 /* AppController.swift */,
+				D37E258F2947E2F40090A8D6 /* C57_91_Functions.h */,
+				D37E25902947E2F40090A8D6 /* C57_91_Functions.c */,
 				D37E25812947E01F0090A8D6 /* Assets.xcassets */,
 				D37E25832947E01F0090A8D6 /* MainMenu.xib */,
 				D37E25862947E01F0090A8D6 /* OverloadTemperatures.entitlements */,
+				D37E258E2947E2F40090A8D6 /* OverloadTemperatures-Bridging-Header.h */,
 			);
 			path = OverloadTemperatures;
 			sourceTree = "<group>";
@@ -90,6 +100,7 @@
 				TargetAttributes = {
 					D37E257B2947E01C0090A8D6 = {
 						CreatedOnToolsVersion = 13.4.1;
+						LastSwiftMigration = 1340;
 					};
 				};
 			};
@@ -128,7 +139,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D37E25912947E2F40090A8D6 /* C57_91_Functions.c in Sources */,
 				D37E25802947E01C0090A8D6 /* AppDelegate.swift in Sources */,
+				D37E258D2947E1BA0090A8D6 /* AppController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -264,6 +277,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = OverloadTemperatures/OverloadTemperatures.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -282,6 +296,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.huberistech.OverloadTemperatures;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "OverloadTemperatures/OverloadTemperatures-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -291,6 +307,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = OverloadTemperatures/OverloadTemperatures.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -309,6 +326,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.huberistech.OverloadTemperatures;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "OverloadTemperatures/OverloadTemperatures-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
