@@ -8,8 +8,14 @@
 #include "C57_91_Functions.h"
 #include <math.h>
 
-// Constant Global for the allowed fluids
+// Constant Global for the allowed fluids (from table G.2)
 const C57_91_FluidCharacteristics StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL] = {{.Cp = 13.92, .D = 0.0013573, .G = 2797.3}, {.Cp = 11.49, .D = 0.12127, .G = 1782.3}, {.Cp = 14.55, .D = 0.00007343, .G = 4434.7},};
+
+// Typical exponent values (from table G.3). Use C57_91_CoolingType as the index into each array.
+const double X[4] = {0.5, 0.5, 0.5, 1.0};
+const double Y[4] = {0.8, 0.9, 0.9, 1.0};
+const double Z[4] = {0.5, 0.5, 1.0, 1.0};
+
 
 /* Function G.1: Hottest-spot temperature
 

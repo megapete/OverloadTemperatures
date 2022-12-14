@@ -7,8 +7,11 @@
 
 // This is the basic implementation of the equations given in C57.91-2011. References to particular equations in the standard are indicated as "G.xx" where 'xx' is the equation number.
 
-// NOTE 1: This file (and its implementation) confrom to GNU11, which is basically C11 with GNU extensions. I do not use GNU extensions, so it should be compatible with C11.
+// NOTE 1: This file (and its implementation file) conforms to GNU11, which is basically C11 with GNU extensions. I do not (to my knowledge) use GNU extensions, so it should also be compatible with C11. This may change if Visual Studio compatibilty becomes an issue.
+
 // NOTE 2: The function and variable names are really ugly but are designed to closely match the names used in the standard (for easier reference). Higher-level access to the functions should probably use more desctiptive function and variable names.
+
+// NOTE 3: Error-handling is basically non-existant at this level and should be done by higher-level access routines before calling anything in this library.
 
 #ifndef C57_91_Functions_h
 #define C57_91_Functions_h
@@ -19,7 +22,7 @@
 // The different cooling types
 typedef enum {
     
-    ONAN,
+    ONAN = 0,
     ONAF,
     OFAF,
     ODAF
@@ -40,7 +43,7 @@ typedef enum {
     MINERAL_OIL = 0,
     SILICON_OIL,
     HTHC,
-    C57_91_FLUIDTYPE_LAST_ENTRY // this must always be the last element of the enum
+    C57_91_FLUIDTYPE_LAST_ENTRY // if this list is ever expanded, this entry must always be the last element of the enum
     
 } C57_91_FluidType;
 
@@ -59,8 +62,16 @@ typedef struct {
 #define SPECIFIC_HEAT_COPPER        2.91
 #define SPECIFIC_HEAT_ALUM          6.80
 
-// Fixed fluid characteristics. To access a particular value of the array, use the C57_91_FluidType as the index.
+// Fixed fluid characteristics (from table G.2). To access a particular value of the array, use the C57_91_FluidType as the index.
 extern const C57_91_FluidCharacteristics StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL];
+
+// Typical exponent values (from table G.3). Use C57_91_CoolingType as the index into each array.
+extern const double X[4];
+extern const double Y[4];
+extern const double Z[4];
+
+// 'Standard' exponents to be used when test data is not available
+// extern const
 
 // Functions
 // G.1: Hottest-spot temperature
