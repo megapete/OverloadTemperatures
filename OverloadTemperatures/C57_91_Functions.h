@@ -9,6 +9,7 @@
 #define C57_91_Functions_h
 
 #include <stdio.h>
+#include <stdbool.h>
 
 // The different cooling types
 typedef enum {
@@ -111,5 +112,8 @@ double Theta_AO_2(double QLOST_W, double QS, double QC, double QLOST_O, double t
 
 // G.26 Temperature rise of top-oil (radiator) over bottom-oil
 double Delta_Theta_ToverB(double QLOST_O, double PT, double delta_T, double z, double theta_TO_R, double theta_BO_R);
+
+// G.27 Stability requirement (NOTE: This function checks that the time interval (Δt) is small enough so that the systems of equations are stable. There are 4 different inequalities defined by the standard. All of them are combined into this single function. If the 'useSimplified' (or cType is ODAF) field is set, G.27D (G.27C) is used with parameters τW and Δt and the remaining input parameters are ignored (the calling routine must still provide a viable pointer fo rthe maxDeltaT parameter). The temperature and viscosity parameters are all passed as 2-element arrays where the first element is the average temperature and the second element is hot-spot) The 'maxDeltaT' parameter is set to the maximum value of Δt that will satisfy the criteria.
+bool TestStability(bool useSimplified, PCH_CoolingTypes cType, double tau_W, double delta_T, double *maxDeltaT, double *wdgTemp_1, double *wdgTemp_R, double *oilTemp_1, double *oilTemp_R, double *viscosity_1, double *viscosity_R);
 
 #endif /* C57_91_Functions_h */

@@ -8,6 +8,7 @@
 #include "C57_91_Functions.h"
 #include <math.h>
 
+
 /* Function G.1: Hottest-spot temperature
 
  ΘH = ΘA + ΔΘBO + ΔΘWO/BO + ΔΘH/WO
@@ -570,4 +571,62 @@ double Delta_Theta_ToverB(double QLOST_O, double PT, double delta_T, double z, d
     double result = pow(QLOST_O / (PT * delta_T), z) * (theta_TO_R - theta_BO_R);
     
     return result;
+}
+
+/* Function G.27 Stability requirement (NOTE: This function checks that the time interval (Δt) is small enough so that the systems of equations are stable. There are 4 different inequalities defined by the standard. All of them are combined into this single function. If the 'useSimplified' (or cType is ODAF) field is set, G.27D (G.27C) is used with parameters τW and Δt and the remaining input parameters are ignored (the calling routine must still provide a viable pointer fo rthe maxDeltaT parameter). The temperature and viscosity parameters are all passed as 2-element arrays where the first element is the average temperature and the second element is hot-spot) The 'maxDeltaT' parameter is set to the maximum value of Δt that will satisfy the criteria.
+ 
+ τW / Δt > ((ΘX,1 - ΘXXO,1) / (ΘX,R - ΘXXO,R))^1/4 * (μX,R / μX,1)^1/4
+ 
+ Where:
+ ΘXXO,1 is the average/hot-spot temperature of fluid in cooling ducts at the prior time, °C
+ ΘXXO,R is the average/hot-spot temperature of fluid in cooling ducts at rated load, °C
+ ΘX,1 is the average/hot-spot winding temperature at the prior time, °C
+ ΘX,R is the average/hot-spot winding temperature at rated load tested, °C
+ μX,1 is the viscosity of fluid for average/hot-spot winding temperature rise at the prior time, cP
+ μX,R is the viscosity of fluid for average/hot-spot winding temperature rise at rated load, cP
+ τW is the winding time constant, min
+ Δt is the time increment for calculation, min
+ 
+ Returns:
+ True if stable, otherwise false
+ 
+ */
+bool TestStability(bool useSimplified, PCH_CoolingTypes cType, double tau_W, double delta_T, double *maxDeltaT, double *wdgTemp_1, double *wdgTemp_R, double *oilTemp_1, double *oilTemp_R, double *viscosity_1, double *viscosity_R) {
+    
+    const int AVERAGE = 0;
+    const int HOTSPOT = 1;
+    
+    double testValue = tau_W / delta_T;
+    double checkValue[2] = {-1.0, -1.0};
+    
+    if (useSimplified) {
+        
+        // G.27D
+        checkValue[AVERAGE] = 9.0;
+        checkValue[HOTSPOT] = 9.0;
+        
+    }
+    else if (cType == ODAF) {
+        
+        // G.27D
+        checkValue[AVERAGE] = 1.0;
+        checkValue[HOTSPOT] = 1.0;
+        
+    }
+    else {
+        
+        for (int i=AVERAGE; i<=HOTSPOT; i++) {
+            
+            checkValue[i] = pow((wdgTemp_1[i] - oilTemp_1[i]) / (wdgTemp_R[i] - oilTemp_R[i]), 0.25) * pow(viscosity_R[i] / viscosity_1[i], 0.25);
+        }
+    }
+    
+    
+    if (maxDeltaT != NULL) {
+        
+        double maxDT = (tau_W / checkValue[0] < tau_W / checkValue[1] ? tau_W / checkValue[0] : tau_W / checkValue[1]);
+        *maxDeltaT = maxDT;
+    }
+    
+    return testValue >= checkValue[0] && testValue >= checkValue[1];
 }
