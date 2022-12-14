@@ -32,10 +32,18 @@ typedef enum {
 // The different winding conductor types
 typedef enum {
     
-    CU,
+    CU = 0,
     AL
     
 } C57_91_ConductorType;
+
+// Constants for the different conductors
+typedef struct {
+    
+    double Tk; // Temperature base
+    double Cp; // Specific Heat
+    
+} C57_91_ConductorCharacteristics;
 
 // The different fluids
 typedef enum {
@@ -50,17 +58,18 @@ typedef enum {
 // Constants used to calculate fluid viscosity at different temperatures (Equation G.28)
 typedef struct {
     
-    double Cp;
-    double D;
-    double G;
+    double Cp; // Specific Heat
+    double D; // constant
+    double G; // constant
     
 } C57_91_FluidCharacteristics;
 
-// Defines for the specific heat of solid materials used in transformers (from C57.91-2011 Table G.2)
+// Defines for the specific heat of steel materials used in transformers (from C57.91-2011 Table G.2)
 #define SPECIFIC_HEAT_STEEL         3.51
-#define SPECIFIC_HEAT_CORESTEEL     3.51
-#define SPECIFIC_HEAT_COPPER        2.91
-#define SPECIFIC_HEAT_ALUM          6.80
+#define SPECIFIC_HEAT_CORESTEEL     SPECIFIC_HEAT_STEEL
+
+// Fixed conductor characteristics. To access a particular value of the array, use the C57_91_FluidType as the index.
+extern const C57_91_ConductorCharacteristics StandardConductors[2];
 
 // Fixed fluid characteristics (from table G.2). To access a particular value of the array, use the C57_91_FluidType as the index.
 extern const C57_91_FluidCharacteristics StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL];
