@@ -5,6 +5,11 @@
 //  Created by Peter Huber on 2022-12-12.
 //
 
+// This is the basic implementation of the equations given in C57.91-2011. References to particular equations in the standard are indicated as "G.xx" where 'xx' is the equation number.
+
+// NOTE 1: This file (and its implementation) confrom to GNU11, which is basically C11 with GNU extensions. I do not use GNU extensions, so it should be compatible with C11.
+// NOTE 2: The function and variable names are really ugly but are designed to closely match the names used in the standard (for easier reference). Higher-level access to the functions should probably use more desctiptive function and variable names.
+
 #ifndef C57_91_Functions_h
 #define C57_91_Functions_h
 
@@ -19,7 +24,7 @@ typedef enum {
     OFAF,
     ODAF
     
-} PCH_CoolingTypes;
+} C57_91_CoolingType;
 
 // The different winding conductor types
 typedef enum {
@@ -27,15 +32,35 @@ typedef enum {
     CU,
     AL
     
-} PCH_ConductorTypes;
+} C57_91_ConductorType;
 
 // The different fluids
 typedef enum {
     
-    MINERAL_OIL,
-    SILICON_OIL
+    MINERAL_OIL = 0,
+    SILICON_OIL,
+    HTHC,
+    C57_91_FLUIDTYPE_LAST_ENTRY // this must always be the last element of the enum
     
-} PCH_FluidTypes;
+} C57_91_FluidType;
+
+// Constants used to calculate fluid viscosity at different temperatures (Equation G.28)
+typedef struct {
+    
+    double Cp;
+    double D;
+    double G;
+    
+} C57_91_FluidCharacteristics;
+
+// Defines for the specific heat of solid materials used in transformers (from C57.91-2011 Table G.2)
+#define SPECIFIC_HEAT_STEEL         3.51
+#define SPECIFIC_HEAT_CORESTEEL     3.51
+#define SPECIFIC_HEAT_COPPER        2.91
+#define SPECIFIC_HEAT_ALUM          6.80
+
+// Fixed fluid characteristics. To access a particular value of the array, use the C57_91_FluidType as the index.
+extern const C57_91_FluidCharacteristics StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL];
 
 // Functions
 // G.1: Hottest-spot temperature
@@ -54,7 +79,7 @@ double Q_GEN_w(double K, double Kw, double Pe, double Pw, double delta_T);
 double Kw(double theta_W_R, double theta_W_1, double theta_K);
 
 // G.6: The heat lost by the windings (NOTE: The standard defines a G.6A for ONAN, ONAF, and OFAF and G.6B for ODAF. This function requires the cooling type as an input to the routine and does the correct calculation accordingly)
-double QLOST_W(PCH_CoolingTypes cType, double Pe, double Pw, double theta_DAO_1, double theta_DAO_R, double theta_W_1, double theta_W_R, double delta_T, double mu_W_1, double mu_W_R);
+double QLOST_W(C57_91_CoolingType cType, double Pe, double Pw, double theta_DAO_1, double theta_DAO_R, double theta_W_1, double theta_W_R, double delta_T, double mu_W_1, double mu_W_R);
 
 // G.7: The mass and thermal capacitance of the windings
 double MCp_W(double Pw, double Pe, double tau_W, double theta_DAO_R, double theta_W_R);
@@ -81,7 +106,7 @@ double Q_GEN_HS(double K, double KHS, double PHS, double PEHS, double delta_T);
 double KHS(double theta_H_1, double theta_H_R, double theta_K);
 
 // G.16: The heat lost at the hot-spot location (NOTE: The standard defines a G.16A for ONAN, ONAF, and OFAF and G.16B for ODAF. We require the cooling type as an input to the routine and call the correct function accordingly. ALSO, functionally, this equation is identical to G.6, so this routine just calls QLOST_W.)
-double QLOST_HS(PCH_CoolingTypes cType, double PEHS, double PHS, double theta_H_1, double theta_H_R, double theta_WO, double theta_WO_R, double delta_T, double mu_HS_1, double mu_HS_R);
+double QLOST_HS(C57_91_CoolingType cType, double PEHS, double PHS, double theta_H_1, double theta_H_R, double theta_WO, double theta_WO_R, double delta_T, double mu_HS_1, double mu_HS_R);
 
 // G.17: The winding hotspot temperature at time t2 (NOTE: This routine is functionally equivalent to G.8 so the underlying routine just calls that.)
 double Theta_H_2(double QGEN_HS, double QLOST_HS, double MCp_W, double theta_H_1);
@@ -113,7 +138,10 @@ double Theta_AO_2(double QLOST_W, double QS, double QC, double QLOST_O, double t
 // G.26 Temperature rise of top-oil (radiator) over bottom-oil
 double Delta_Theta_ToverB(double QLOST_O, double PT, double delta_T, double z, double theta_TO_R, double theta_BO_R);
 
-// G.27 Stability requirement (NOTE: This function checks that the time interval (Δt) is small enough so that the systems of equations are stable. There are 4 different inequalities defined by the standard. All of them are combined into this single function. If the 'useSimplified' (or cType is ODAF) field is set, G.27D (G.27C) is used with parameters τW and Δt and the remaining input parameters are ignored (the calling routine must still provide a viable pointer fo rthe maxDeltaT parameter). The temperature and viscosity parameters are all passed as 2-element arrays where the first element is the average temperature and the second element is hot-spot) The 'maxDeltaT' parameter is set to the maximum value of Δt that will satisfy the criteria.
-bool TestStability(bool useSimplified, PCH_CoolingTypes cType, double tau_W, double delta_T, double *maxDeltaT, double *wdgTemp_1, double *wdgTemp_R, double *oilTemp_1, double *oilTemp_R, double *viscosity_1, double *viscosity_R);
+// G.27 Stability requirement (NOTE: This function checks that the time interval (Δt) is small enough so that the systems of equations are stable. There are 4 different inequalities defined by the standard. All of them are combined into this single function. If the 'useSimplified' (or cType is ODAF) field is set, G.27D (G.27C) is used with parameters τW and Δt and the remaining input parameters are ignored (the calling routine must still provide a viable pointer for the maxDeltaT parameter). The temperature and viscosity parameters are all passed as 2-element arrays where the first element is the average temperature and the second element is hot-spot) The 'maxDeltaT' parameter is set to the maximum value of Δt that will satisfy the criteria.
+bool TestStability(bool useSimplified, C57_91_CoolingType cType, double tau_W, double delta_T, double *maxDeltaT, double *wdgTemp_1, double *wdgTemp_R, double *oilTemp_1, double *oilTemp_R, double *viscosity_1, double *viscosity_R);
+
+// G.28 Fluid viscosity at different temperatures
+double MU(C57_91_FluidType fType, double theta);
 
 #endif /* C57_91_Functions_h */

@@ -8,6 +8,8 @@
 #include "C57_91_Functions.h"
 #include <math.h>
 
+// Constant Global for the allowed fluids
+const C57_91_FluidCharacteristics StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL] = {{.Cp = 13.92, .D = 0.0013573, .G = 2797.3}, {.Cp = 11.49, .D = 0.12127, .G = 1782.3}, {.Cp = 14.55, .D = 0.00007343, .G = 4434.7},};
 
 /* Function G.1: Hottest-spot temperature
 
@@ -130,7 +132,7 @@ double Kw(double theta_W_R, double theta_W_1, double theta_K) {
  QLOST,W which is the heat lost by winding, W-min
  
  */
-double QLOST_W(PCH_CoolingTypes cType, double Pe, double Pw, double theta_DAO_1, double theta_DAO_R, double theta_W_1, double theta_W_R, double delta_T, double mu_W_1, double mu_W_R) {
+double QLOST_W(C57_91_CoolingType cType, double Pe, double Pw, double theta_DAO_1, double theta_DAO_R, double theta_W_1, double theta_W_R, double delta_T, double mu_W_1, double mu_W_R) {
     
     // if the cooling type is ODAF, we ignore the μ values
     double muFactor = 1.0;
@@ -359,7 +361,7 @@ double KHS(double theta_H_1, double theta_H_R, double theta_K) {
  QLOST,HS is the heat lost for hot-spot calculation, W-min
  
  */
-double QLOST_HS(PCH_CoolingTypes cType, double PEHS, double PHS, double theta_H_1, double theta_H_R, double theta_WO, double theta_WO_R, double delta_T, double mu_HS_1, double mu_HS_R) {
+double QLOST_HS(C57_91_CoolingType cType, double PEHS, double PHS, double theta_H_1, double theta_H_R, double theta_WO, double theta_WO_R, double delta_T, double mu_HS_1, double mu_HS_R) {
     
     // functionality is identical to G.6, so just call that
     return QLOST_W(cType, PEHS, PHS, theta_WO, theta_WO_R,  theta_H_1, theta_H_R, delta_T, mu_HS_1, mu_HS_R);
@@ -591,7 +593,7 @@ double Delta_Theta_ToverB(double QLOST_O, double PT, double delta_T, double z, d
  True if stable, otherwise false
  
  */
-bool TestStability(bool useSimplified, PCH_CoolingTypes cType, double tau_W, double delta_T, double *maxDeltaT, double *wdgTemp_1, double *wdgTemp_R, double *oilTemp_1, double *oilTemp_R, double *viscosity_1, double *viscosity_R) {
+bool TestStability(bool useSimplified, C57_91_CoolingType cType, double tau_W, double delta_T, double *maxDeltaT, double *wdgTemp_1, double *wdgTemp_R, double *oilTemp_1, double *oilTemp_R, double *viscosity_1, double *viscosity_R) {
     
     const int AVERAGE = 0;
     const int HOTSPOT = 1;
@@ -608,13 +610,14 @@ bool TestStability(bool useSimplified, PCH_CoolingTypes cType, double tau_W, dou
     }
     else if (cType == ODAF) {
         
-        // G.27D
+        // G.27C
         checkValue[AVERAGE] = 1.0;
         checkValue[HOTSPOT] = 1.0;
         
     }
     else {
         
+        // G27.A and G27.B
         for (int i=AVERAGE; i<=HOTSPOT; i++) {
             
             checkValue[i] = pow((wdgTemp_1[i] - oilTemp_1[i]) / (wdgTemp_R[i] - oilTemp_R[i]), 0.25) * pow(viscosity_R[i] / viscosity_1[i], 0.25);
@@ -629,4 +632,24 @@ bool TestStability(bool useSimplified, PCH_CoolingTypes cType, double tau_W, dou
     }
     
     return testValue >= checkValue[0] && testValue >= checkValue[1];
+}
+
+/* Function G.28 Fluid viscosity at different temperatures
+ 
+ μ = D * exp(G / (Θ + 273))
+ 
+ Where:
+ D is a constant (Table G.2)
+ G is a constant (Table G.2)
+ Θ is the temperature of oil to use for viscosity, °C
+ 
+ Returns:
+ μ, which is the viscosity of oil, centipoises
+ 
+ */
+double MU(C57_91_FluidType fType, double theta) {
+    
+    double result = StandardFluids[fType].D * exp(StandardFluids[fType].G / (theta + 273));
+    
+    return result;
 }
