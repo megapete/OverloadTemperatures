@@ -19,6 +19,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+// Tell the C++ compiler that this is C code
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // The different cooling types
 typedef enum {
     
@@ -163,5 +168,10 @@ bool TestStability(bool useSimplified, C57_91_CoolingType cType, double tau_W, d
 
 // G.28 Fluid viscosity at different temperatures
 double MU(C57_91_FluidType fType, double theta);
+
+// Close the braces for extern "C"
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* C57_91_Functions_h */
