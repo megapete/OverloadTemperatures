@@ -9,6 +9,11 @@ import Foundation
 
 class OverloadModel {
     
+    // rated load in kVA
+    let ratedLoad:Double
+    // cooling mode that the overload calculations will be done with
+    let coolingMode:C57_91_CoolingType
+    
     var tempsAtRatedLoad:Temperatures
     var lossesAtRatedLoad:Losses
     
@@ -20,5 +25,17 @@ class OverloadModel {
     var massOfTank:Double
     var massOfWindings:Double
     
+    init(ratedLoad:Double, coolingMode:C57_91_CoolingType, tempsAtRatedLoad:Temperatures, lossesAtRatedLoad:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double) {
+        
+        self.ratedLoad = ratedLoad
+        self.coolingMode = coolingMode
+        self.tempsAtRatedLoad = tempsAtRatedLoad
+        self.lossesAtRatedLoad = lossesAtRatedLoad
+        self.maxOverloadTemps = Temperatures()
+        self.massOfCore = massOfCore
+        self.massOfFluid = massOfFluid
+        self.massOfTank = massOfTank
+        self.massOfWindings = massOfWinding
+    }
     
 }

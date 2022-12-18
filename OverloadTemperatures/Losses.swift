@@ -14,18 +14,24 @@ struct Losses {
     var referenceTemperature:Double
     
     var coreLoss:Double
-    var coreLossWithOverexcitation:Double
+    var coreLossWithOverexcitation:Double = 0.0
     var windingResistiveLoss:Double
-    var windingAvergeEddyLossPU:Double
+    var windingEddyLoss:Double
+    var windingAvergeEddyLossPU:Double {
+        
+        get {
+            
+            return self.windingEddyLoss / self.windingResistiveLoss
+        }
+        
+        set {
+            
+            self.windingEddyLoss = newValue * self.windingResistiveLoss
+        }
+    }
     var windingHotspotEddyLossPU:Double
     var strayLoss:Double
     
-    var windingEddyLoss:Double {
-        
-        get {
-            return windingResistiveLoss * windingAvergeEddyLossPU
-        }
-    }
     
     // wrapper for C57.91 equation G.5)
     func TemperatureCorrectionFactor(newTemp:Double) -> Double {

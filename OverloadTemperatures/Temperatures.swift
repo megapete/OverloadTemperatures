@@ -10,19 +10,19 @@ import Foundation
 struct Temperatures {
     
     // Temperature-dependent values of the struct are based on this temperature
-    var referenceTemperature:Double
+    var referenceTemperature:Double = 20.0
     
-    var bottomFluidTemperature:Double
+    var bottomFluidTemperature:Double = 20.0
     
-    var averageFluidTemperatureInCoolingDucts:Double
-    var averageFluidTemperatureInTankAndRads:Double
-    var averageWindingTemperature:Double
+    var averageFluidTemperatureInCoolingDucts:Double = 20.0
+    var averageFluidTemperatureInTankAndRads:Double = 20.0
+    var averageWindingTemperature:Double = 20.0
     
-    var topFluidTemperatureInCoolingDucts:Double
-    var topFluidTemperatureInTankAndRads:Double
-    var hotSpotFluidTemperature:Double
+    var topFluidTemperatureInCoolingDucts:Double = 20.0
+    var topFluidTemperatureInTankAndRads:Double = 20.0
+    var hotSpotFluidTemperature:Double = 20.0
     
-    var hotSpotWindingTemperature:Double
+    var hotSpotWindingTemperature:Double = 20.0
     
     
 }
