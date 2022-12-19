@@ -9,13 +9,19 @@ import Foundation
 
 class OverloadModel {
     
-    // rated load in kVA
-    let ratedLoad:Double
+    // We define two different kva bases because the BASIC program in C57.91 does that (needed for testing). This is probably useless for a manufacturer
+    // kVA used for tested (or calculated) temperatures
+    let kvaBaseForTemperatures:Double
+    // kVA used for tested (or calculated) losses
+    let kvaBaseForLoss:Double
+    
     // cooling mode that the overload calculations will be done with
     let coolingMode:C57_91_CoolingType
     
-    var tempsAtRatedLoad:Temperatures
-    var lossesAtRatedLoad:Losses
+    // tested or calculated temperatures at kvaBaseForTemperatures
+    var testedTemperatures:Temperatures
+    // tested or calculated losses at kvaBaseForLoss
+    var testedLosses:Losses
     
     var maxOverloadTemps:Temperatures
     
@@ -25,12 +31,13 @@ class OverloadModel {
     var massOfTank:Double
     var massOfWindings:Double
     
-    init(ratedLoad:Double, coolingMode:C57_91_CoolingType, tempsAtRatedLoad:Temperatures, lossesAtRatedLoad:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double) {
+    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, coolingMode:C57_91_CoolingType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double) {
         
-        self.ratedLoad = ratedLoad
+        self.kvaBaseForTemperatures = kvaBaseForTemperatures
+        self.kvaBaseForLoss = kvaBaseForLoss
         self.coolingMode = coolingMode
-        self.tempsAtRatedLoad = tempsAtRatedLoad
-        self.lossesAtRatedLoad = lossesAtRatedLoad
+        self.testedTemperatures = testedTemperatures
+        self.testedLosses = testedLosses
         self.maxOverloadTemps = Temperatures()
         self.massOfCore = massOfCore
         self.massOfFluid = massOfFluid

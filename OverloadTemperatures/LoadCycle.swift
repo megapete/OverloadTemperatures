@@ -9,7 +9,7 @@ import Foundation
 
 struct LoadCycle {
     
-    let duration:Double
+    let cycleStartTime:Double
     let ambient:Double
     let puLoad:Double
 }
