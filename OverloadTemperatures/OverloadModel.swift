@@ -31,7 +31,10 @@ class OverloadModel {
     var massOfTank:Double
     var massOfWindings:Double
     
-    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, coolingMode:C57_91_CoolingType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double) {
+    var windingTau:Double
+    var hotspotHeightPU:Double
+    
+    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, coolingMode:C57_91_CoolingType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double, windingTau:Double = 5.0, hotspotHeightPU:Double = 1.0) {
         
         self.kvaBaseForTemperatures = kvaBaseForTemperatures
         self.kvaBaseForLoss = kvaBaseForLoss
@@ -43,6 +46,8 @@ class OverloadModel {
         self.massOfFluid = massOfFluid
         self.massOfTank = massOfTank
         self.massOfWindings = massOfWinding
+        self.hotspotHeightPU = hotspotHeightPU
+        self.windingTau = windingTau
     }
     
 }
