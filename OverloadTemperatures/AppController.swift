@@ -13,7 +13,7 @@ class AppController: NSObject {
 
     @IBAction func handle_C57_91_Demo(_ sender: Any) {
         
-        let loss = Losses(conductorType: CU, referenceTemperature: 75.0, coreLoss: 36986.0, coreLossWithOverexcitation: 36986.0, windingResistiveLoss: 51690.0, windingEddyLoss: 0.0, windingHotspotEddyLossPU: 0.0, strayLoss: 21078.0)
+        let loss = Losses(conductorType: .CU, referenceTemperature: 75.0, coreLoss: 36986.0, coreLossWithOverexcitation: 36986.0, windingResistiveLoss: 51690.0, windingEddyLoss: 0.0, windingHotspotEddyLossPU: 0.0, strayLoss: 21078.0)
         
         let temperature = Temperatures(ambientTemperature: 20.0, averageWdgTempRise: 63.0, hotspotWdgTempRise: 80.0, topOilRise: 55.0, bottomOilRise: 25.0)
         
@@ -22,12 +22,12 @@ class AppController: NSObject {
         let windingTimeConstant = 5.0 // minutes
         let MwCpw = MCp_W(51690.0, 0.0, windingTimeConstant, temperature.averageFluidTemperatureInCoolingDucts, temperature.averageWindingTemperature)
         let StdCondChars = StandardConductors
-        // well this is ugly...
+        // well this is ugly...apparently, Swift interprets C arrays that are allocated like array[X] (where X is a constant), as an X-element tuple instead of an array
         let Cpw = StdCondChars.0.Cp
         let massWdg = MwCpw / Cpw
         let massCore = massCoreAndCoil - massWdg
         
-        let model = OverloadModel(kvaBaseForTemperatures: 52267.0, kvaBaseForLoss: 28000.0, coolingMode: ONAF, testedTemperatures: temperature, testedLosses: loss, massOfCore: massCore, massOfFluid: 4910.0, massOfTank: 31400, massOfWinding: massWdg)
+        let model = OverloadModel(kvaBaseForTemperatures: 52267.0, kvaBaseForLoss: 28000.0, coolingMode: .ONAF, testedTemperatures: temperature, testedLosses: loss, massOfCore: massCore, massOfFluid: 4910.0, massOfTank: 31400, massOfWinding: massWdg)
     }
     
 }

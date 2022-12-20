@@ -24,6 +24,40 @@
 extern "C" {
 #endif
 
+// do some conditional compilation
+#ifdef __APPLE__
+#include <CoreFoundation/CFAvailability.h>
+#endif
+
+// enums are ugly in Swift if we don't use some fancy macros, but for non-Apple systems we want to use simpel emums
+#ifdef CF_ENUM
+
+// The different cooling types
+typedef CF_ENUM(int, C57_91_CoolingType) {
+    
+    ONAN = 0,
+    ONAF = 1,
+    OFAF = 2,
+    ODAF = 3
+};
+
+// The different winding conductor types
+typedef CF_ENUM(int, C57_91_ConductorType) {
+    
+    CU = 0,
+    AL = 1
+};
+
+// The different fluids
+typedef CF_ENUM(int, C57_91_FluidType) {
+    
+    MINERAL_OIL = 0,
+    SILICON_OIL = 1,
+    HTHC = 2,
+    C57_91_FLUIDTYPE_LAST_ENTRY // if this list is ever expanded, this entry must always be the last element of the enum
+};
+
+#else
 // The different cooling types
 typedef enum {
     
@@ -42,14 +76,6 @@ typedef enum {
     
 } C57_91_ConductorType;
 
-// Constants for the different conductors
-typedef struct {
-    
-    double Tk; // Temperature base
-    double Cp; // Specific Heat
-    
-} C57_91_ConductorCharacteristics;
-
 // The different fluids
 typedef enum {
     
@@ -59,6 +85,18 @@ typedef enum {
     C57_91_FLUIDTYPE_LAST_ENTRY // if this list is ever expanded, this entry must always be the last element of the enum
     
 } C57_91_FluidType;
+
+#endif
+
+// Constants for the different conductors
+typedef struct {
+    
+    double Tk; // Temperature base
+    double Cp; // Specific Heat
+    
+} C57_91_ConductorCharacteristics;
+
+
 
 // Constants used to calculate fluid viscosity at different temperatures (Equation G.28)
 typedef struct {

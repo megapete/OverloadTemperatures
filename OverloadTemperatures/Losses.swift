@@ -37,7 +37,7 @@ struct Losses {
     func TemperatureCorrectionFactor(newTemp:Double) -> Double {
         
         // Set the correct resistance factor depending on the conductor
-        let condFactor = self.conductorType == CU ? 234.5 : 225.0
+        let condFactor = self.conductorType == .CU ? 234.5 : 225.0
         
         // call the appropriate C57.91 function
         return Kw(self.referenceTemperature, newTemp, condFactor)
