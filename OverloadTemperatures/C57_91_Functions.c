@@ -9,14 +9,14 @@
 #include <math.h>
 
 // Constant Global for the allowed fluids (from table G.2)
-const C57_91_FluidCharacteristics StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL] = {{.Cp = 13.92, .D = 0.0013573, .G = 2797.3}, {.Cp = 11.49, .D = 0.12127, .G = 1782.3}, {.Cp = 14.55, .D = 0.00007343, .G = 4434.7},};
+const C57_91_FluidCharacteristics C57_91_StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL] = {{.Cp = 13.92, .D = 0.0013573, .G = 2797.3}, {.Cp = 11.49, .D = 0.12127, .G = 1782.3}, {.Cp = 14.55, .D = 0.00007343, .G = 4434.7},};
 
-const C57_91_ConductorCharacteristics StandardConductors[2] = {{.Tk = 234.5, .Cp = 2.91}, {.Tk = 225.0, .Cp = 6.798}};
+const C57_91_ConductorCharacteristics C57_91_StandardConductors[2] = {{.Tk = 234.5, .Cp = 2.91}, {.Tk = 225.0, .Cp = 6.798}};
 
 // Typical exponent values (from table G.3). Use C57_91_CoolingType as the index into each array.
-const double X[4] = {0.5, 0.5, 0.5, 1.0};
-const double Y[4] = {0.8, 0.9, 0.9, 1.0};
-const double Z[4] = {0.5, 0.5, 1.0, 1.0};
+const double C57_91_X[4] = {0.5, 0.5, 0.5, 1.0};
+const double C57_91_Y[4] = {0.8, 0.9, 0.9, 1.0};
+const double C57_91_Z[4] = {0.5, 0.5, 1.0, 1.0};
 
 
 /* Function G.1: Hottest-spot temperature
@@ -657,7 +657,7 @@ bool TestStability(bool useSimplified, C57_91_CoolingType cType, double tau_W, d
  */
 double MU(C57_91_FluidType fType, double theta) {
     
-    double result = StandardFluids[fType].D * exp(StandardFluids[fType].G / (theta + 273));
+    double result = C57_91_StandardFluids[fType].D * exp(C57_91_StandardFluids[fType].G / (theta + 273));
     
     return result;
 }

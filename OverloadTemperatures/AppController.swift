@@ -10,6 +10,31 @@ import Cocoa
 class AppController: NSObject {
     
     var model:OverloadModel? = nil
+    
+    // Swift converts fixed-number arrays to tuples, which is kind of gross. When this class is initialized, we will fill these arrays
+    var StdConductors:[C57_91_ConductorCharacteristics] = []
+    var StdFluids:[C57_91_FluidCharacteristics] = []
+    
+    // Do the same with the exponents
+    var X:[Double] = []
+    var Y:[Double] = []
+    var Z:[Double] = []
+    
+    override func awakeFromNib() {
+        
+        let (copper, aluminum) = C57_91_StandardConductors
+        StdConductors = [copper, aluminum]
+        
+        let (oil, silicon, hthc) = C57_91_StandardFluids
+        StdFluids = [oil, silicon, hthc]
+        
+        var (onan, onaf, ofaf, odaf) = C57_91_X
+        X = [onan, onaf, ofaf, odaf]
+        (onan, onaf, ofaf, odaf) = C57_91_Y
+        Y = [onan, onaf, ofaf, odaf]
+        (onan, onaf, ofaf, odaf) = C57_91_Z
+        Z = [onan, onaf, ofaf, odaf]
+    }
 
     @IBAction func handle_C57_91_Demo(_ sender: Any) {
         
@@ -21,9 +46,8 @@ class AppController: NSObject {
         let massCoreAndCoil = 75600.0
         let windingTimeConstant = 5.0 // minutes
         let MwCpw = MCp_W(51690.0, 0.0, windingTimeConstant, temperature.averageFluidTemperatureInCoolingDucts, temperature.averageWindingTemperature)
-        let StdCondChars = StandardConductors
-        // well this is ugly...apparently, Swift interprets C arrays that are allocated like array[X] (where X is a constant), as an X-element tuple instead of an array
-        let Cpw = StdCondChars.0.Cp
+        
+        let Cpw = StdConductors[Int(C57_91_ConductorType.CU.rawValue)].Cp
         let massWdg = MwCpw / Cpw
         let massCore = massCoreAndCoil - massWdg
         

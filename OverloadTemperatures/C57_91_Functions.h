@@ -29,7 +29,7 @@ extern "C" {
 #include <CoreFoundation/CFAvailability.h>
 #endif
 
-// enums are ugly in Swift if we don't use some fancy macros, but for non-Apple systems we want to use simpel emums
+// enums are ugly in Swift if we don't use some fancy macros, but for non-Apple systems we want to use simple emums
 #ifdef CF_ENUM
 
 // The different cooling types
@@ -57,7 +57,7 @@ typedef CF_ENUM(int, C57_91_FluidType) {
     C57_91_FLUIDTYPE_LAST_ENTRY // if this list is ever expanded, this entry must always be the last element of the enum
 };
 
-#else
+#else // non-Apple
 // The different cooling types
 typedef enum {
     
@@ -96,8 +96,6 @@ typedef struct {
     
 } C57_91_ConductorCharacteristics;
 
-
-
 // Constants used to calculate fluid viscosity at different temperatures (Equation G.28)
 typedef struct {
     
@@ -112,15 +110,15 @@ typedef struct {
 #define SPECIFIC_HEAT_CORESTEEL     SPECIFIC_HEAT_STEEL
 
 // Fixed conductor characteristics. To access a particular value of the array, use the C57_91_FluidType as the index.
-extern const C57_91_ConductorCharacteristics StandardConductors[2];
+extern const C57_91_ConductorCharacteristics C57_91_StandardConductors[2];
 
 // Fixed fluid characteristics (from table G.2). To access a particular value of the array, use the C57_91_FluidType as the index.
-extern const C57_91_FluidCharacteristics StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL];
+extern const C57_91_FluidCharacteristics C57_91_StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL];
 
 // Typical exponent values (from table G.3). Use C57_91_CoolingType as the index into each array.
-extern const double X[4];
-extern const double Y[4];
-extern const double Z[4];
+extern const double C57_91_X[4];
+extern const double C57_91_Y[4];
+extern const double C57_91_Z[4];
 
 // 'Standard' exponents to be used when test data is not available
 // extern const
