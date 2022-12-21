@@ -16,6 +16,8 @@
 		F5079C1F294CCAF3003B38A8 /* Temperatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5079C1E294CCAF3003B38A8 /* Temperatures.swift */; };
 		F5079C21294CD073003B38A8 /* Losses.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5079C20294CD073003B38A8 /* Losses.swift */; };
 		F5079C23294CEF86003B38A8 /* LoadCycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5079C22294CEF86003B38A8 /* LoadCycle.swift */; };
+		F571280A2953A4EF00B0715E /* PCH_Defs.swift in Sources */ = {isa = PBXBuildFile; fileRef = F57128082953A4EF00B0715E /* PCH_Defs.swift */; };
+		F571280B2953A4EF00B0715E /* GlobalDefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = F57128092953A4EF00B0715E /* GlobalDefs.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,8 @@
 		F5079C1E294CCAF3003B38A8 /* Temperatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Temperatures.swift; sourceTree = "<group>"; };
 		F5079C20294CD073003B38A8 /* Losses.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Losses.swift; sourceTree = "<group>"; };
 		F5079C22294CEF86003B38A8 /* LoadCycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadCycle.swift; sourceTree = "<group>"; };
+		F57128082953A4EF00B0715E /* PCH_Defs.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PCH_Defs.swift; path = ../../../../Library/CloudStorage/Dropbox/MyProjects/PCH_Defs.swift; sourceTree = "<group>"; };
+		F57128092953A4EF00B0715E /* GlobalDefs.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = GlobalDefs.swift; path = ../../../../Library/CloudStorage/Dropbox/MyProjects/GlobalDefs.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,6 +69,8 @@
 			isa = PBXGroup;
 			children = (
 				D37E257F2947E01C0090A8D6 /* AppDelegate.swift */,
+				F57128092953A4EF00B0715E /* GlobalDefs.swift */,
+				F57128082953A4EF00B0715E /* PCH_Defs.swift */,
 				D37E258C2947E1BA0090A8D6 /* AppController.swift */,
 				F5079C1C294CCAAF003B38A8 /* OverloadModel.swift */,
 				F5079C1E294CCAF3003B38A8 /* Temperatures.swift */,
@@ -155,7 +161,9 @@
 				F5079C23294CEF86003B38A8 /* LoadCycle.swift in Sources */,
 				F5079C1F294CCAF3003B38A8 /* Temperatures.swift in Sources */,
 				D37E25912947E2F40090A8D6 /* C57_91_Functions.c in Sources */,
+				F571280B2953A4EF00B0715E /* GlobalDefs.swift in Sources */,
 				D37E25802947E01C0090A8D6 /* AppDelegate.swift in Sources */,
+				F571280A2953A4EF00B0715E /* PCH_Defs.swift in Sources */,
 				D37E258D2947E1BA0090A8D6 /* AppController.swift in Sources */,
 				F5079C1D294CCAAF003B38A8 /* OverloadModel.swift in Sources */,
 			);

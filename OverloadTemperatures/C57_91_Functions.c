@@ -2,7 +2,7 @@
 //  C57_91_Functions.c
 //  OverloadTemperatures
 //
-//  Created by Peter Huber on 2022-12-12.
+//  Created by Peter Huber (Huberis Technologies Inc.) on 2022-12-12.
 //
 
 #include "C57_91_Functions.h"

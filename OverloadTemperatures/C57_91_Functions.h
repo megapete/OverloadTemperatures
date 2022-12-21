@@ -2,16 +2,16 @@
 //  C57_91_Functions.h
 //  OverloadTemperatures
 //
-//  Created by Peter Huber on 2022-12-12.
+//  Created by Peter Huber (Huberis Technologies Inc.) on 2022-12-12.
 //
 
 // This is the basic implementation of the equations given in C57.91-2011. References to particular equations in the standard are indicated as "G.xx" where 'xx' is the equation number.
 
 // NOTE 1: This file (and its implementation file) conforms to GNU11, which is basically C11 with GNU extensions. I do not (to my knowledge) use GNU extensions, so it should also be compatible with C11. This may change if Visual Studio compatibilty becomes an issue.
 
-// NOTE 2: The function and variable names are really ugly but are designed to closely match the names used in the standard (for easier reference). Higher-level access to the functions should probably use more desctiptive function and variable names.
+// NOTE 2: The function and variable names are really ugly but are designed to closely match the names used in the standard (for easier reference). Comments are included in this header file that explain the parameters & functions using the same descriptions that are found in the 2011 revision of the standard (literally: they have been copied directly from the standard and pasted directly into the comments). Higher-level access to the functions should probably use more desctiptive function and variable names.
 
-// NOTE 3: Error-handling is basically non-existant at this level and should be done by higher-level access routines before calling anything in this library.
+// NOTE 3: Error-handling is basically non-existant at this level (most of the implementations are straight-forward enough that errors should be immediately obvious). That said, error-checking should be done by higher-level access routines before calling anything in this library.
 
 #ifndef C57_91_Functions_h
 #define C57_91_Functions_h
@@ -57,7 +57,17 @@ typedef CF_ENUM(int, C57_91_FluidType) {
     C57_91_FLUIDTYPE_LAST_ENTRY // if this list is ever expanded, this entry must always be the last element of the enum
 };
 
-#else // non-Apple
+#else // non-Apple implementation
+
+// _Nonnull and _Nullable only really make sense for Swift, so we define dummy macros that do nothing in C/C++ (ie: Windows)
+#ifndef _Nonnull
+#define _Nonnull
+#endif
+
+#ifndef _Nullable
+#define _Nullable
+#endif
+
 // The different cooling types
 typedef enum {
     
@@ -228,7 +238,7 @@ double Theta_WO(double theta_TDO, double theta_TO, double theta_BO, double theta
 /// - Parameter EHS: the eddy loss at winding hot spot location, per unit of I2R loss
 /// - Parameter totalLoss: A two-element array of double
 /// - Returns: First element of totalLoss is the winding I2R loss at rated load and rated hot spot temperature, W; Second element is the eddy loss at rated load and rated winding hot-spot temperature, W
-void P_TOTAL_HS(double Pw, double theta_H_R, double theta_W_R, double theta_K, double EHS, double *totalLoss);
+void P_TOTAL_HS(double Pw, double theta_H_R, double theta_W_R, double theta_K, double EHS, double *_Nonnull totalLoss);
 
 /// G.14: Heat generated at the hot-spot temperature.
 /// - Parameter K: the ratio of load L to rated load, per unit
@@ -349,8 +359,8 @@ double Theta_AO_2(double QLOST_W, double QS, double QC, double QLOST_O, double t
 double Delta_Theta_ToverB(double QLOST_O, double PT, double delta_T, double z, double theta_TO_R, double theta_BO_R);
 
 /// G.27 Stability requirement
-/// - NOTE: This function checks that the time interval (Δt) is small enough so that the systems of equations are stable. There are 4 different inequalities defined by the standard. All of them are combined into this single function. If the 'useSimplified'  field is set (or cType is ODAF), G.27D (G.27C) is used with parameters τW and Δt and the remaining input parameters are ignored (the calling routine must still provide a viable pointer for the maxDeltaT parameter). The temperature and viscosity parameters are all passed as 2-element arrays where the first element is the average temperature and the second element is hot-spot) The 'maxDeltaT' parameter is set to the maximum value of Δt that will satisfy the criteria.
-/// - Parameter useSimplified: if true, use the simplified criteria of equation G.27D to evaulate staibility (all other parameters are ignored except maxDeltaT, which must point to a valid memory location
+/// - NOTE: This function checks that the time interval (Δt) is small enough so that the systems of equations are stable. There are 4 different inequalities defined by the standard. All of them are combined into this single function. If the 'useSimplified'  field is set (or cType is ODAF), G.27D (G.27C) is used with parameters τW and Δt and the remaining input parameters are ignored (the calling routine must still provide a viable tauW and pointer for the maxDeltaT parameter). The temperature and viscosity parameters are all passed as 2-element arrays where the first element is the average temperature and the second element is hot-spot) The 'maxDeltaT' parameter is set to the maximum value of Δt that will satisfy the criteria.
+/// - Parameter useSimplified: if true, use the simplified criteria of equation G.27D to evaulate staibility (all other parameters are ignored except tauW and maxDeltaT, which must point to a valid memory location
 /// - Parameter cType: the cooling type, C57_91_CoolingType
 /// - Parameter tau_W: the winding time constant, min
 /// - Parameter delta_T: the time increment for calculation, min
@@ -362,7 +372,7 @@ double Delta_Theta_ToverB(double QLOST_O, double PT, double delta_T, double z, d
 /// - Parameter viscosity_1: An array of two doubles (cP):  Element 0: tthe viscosity of fluid for average winding temperature rise at the prior time; Element 1: the viscosity of fluid for hot-spot calculation at the prior time
 /// - Parameter viscosity_R: An array of two doubles (cP):  Element 0: tthe viscosity of fluid for average winding temperature rise at rated load; Element 1: the viscosity of fluid for hot-spot calculation at rated load
 /// - Returns: True if the systems of equations are stable, otherwise false. On exit, the maxDeltaT pointer will point to the maximum value of delta_T that can be used and still have the equations be stable.
-bool TestStability(bool useSimplified, C57_91_CoolingType cType, double tau_W, double delta_T, double *maxDeltaT, double *wdgTemp_1, double *wdgTemp_R, double *oilTemp_1, double *oilTemp_R, double *viscosity_1, double *viscosity_R);
+bool TestStability(bool useSimplified, C57_91_CoolingType cType, double tau_W, double delta_T, double *_Nonnull maxDeltaT, double *_Nullable wdgTemp_1, double *_Nullable wdgTemp_R, double *_Nullable oilTemp_1, double *_Nullable oilTemp_R, double *_Nullable viscosity_1, double *_Nullable viscosity_R);
 
 /// G.28 Fluid viscosity at different temperatures
 /// - Parameter ftype: the fluid type, C57_91_FluidType
