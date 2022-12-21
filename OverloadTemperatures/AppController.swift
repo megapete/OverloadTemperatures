@@ -37,8 +37,8 @@ class AppController: NSObject {
     }
 
     @IBAction func handle_C57_91_Demo(_ sender: Any) {
-        
-        let loss = Losses(conductorType: .CU, referenceTemperature: 75.0, coreLoss: 36986.0, coreLossWithOverexcitation: 36986.0, windingResistiveLoss: 51690.0, windingEddyLoss: 0.0, windingHotspotEddyLossPU: 0.0, strayLoss: 21078.0)
+                
+        let loss = Losses(conductorType: .CU, referenceTemperature: 75.0, coreLoss: 36986.0, coreLossWithOverexcitation: 36986.0, windingResistiveLoss: 51690, windingEddyLoss: 0.0, windingHotspotEddyLossPU: 0.0, strayLoss: 21078.0)
         
         let temperature = Temperatures(ambientTemperature: 20.0, averageWdgTempRise: 63.0, hotspotWdgTempRise: 80.0, topOilRise: 55.0, bottomOilRise: 25.0)
         
@@ -51,7 +51,7 @@ class AppController: NSObject {
         let massWdg = MwCpw / Cpw
         let massCore = massCoreAndCoil - massWdg
         
-        let model = OverloadModel(kvaBaseForTemperatures: 52267.0, kvaBaseForLoss: 28000.0, coolingMode: .ONAF, testedTemperatures: temperature, testedLosses: loss, massOfCore: massCore, massOfFluid: 4910.0, massOfTank: 31400, massOfWinding: massWdg)
+        let model = OverloadModel(kvaBaseForTemperatures: 52267.0, kvaBaseForLoss: 28000.0, kVABaseForOverLoad: 52267.0, coolingMode: .ONAF, testedTemperatures: temperature, testedLosses: loss, massOfCore: massCore, massOfFluid: 4910.0, massOfTank: 31400, massOfWinding: massWdg)
         
         // create an array of load cycles
         let loadCycles:[LoadCycle] = [LoadCycle(cycleStartTime: 0.0, ambient: 30.0, puLoad: 0.73), LoadCycle(cycleStartTime: 1.0, ambient: 29.5, puLoad: 0.64), LoadCycle(cycleStartTime: 0.0, ambient: 30.0, puLoad: 0.73), LoadCycle(cycleStartTime: 6.0, ambient: 28.2, puLoad: 0.56), LoadCycle(cycleStartTime: 7.0, ambient: 29.8, puLoad: 0.62), LoadCycle(cycleStartTime: 10.0, ambient: 35.9, puLoad: 0.88), LoadCycle(cycleStartTime: 13, ambient: 39.6, puLoad: 1.03), LoadCycle(cycleStartTime: 14.0, ambient: 40.0, puLoad: 1.07), LoadCycle(cycleStartTime: 15.0, ambient: 40.0, puLoad: 1.1), LoadCycle(cycleStartTime:16.0, ambient: 39.6, puLoad: 1.1), LoadCycle(cycleStartTime: 18.0, ambient: 36.8, puLoad: 1.04), LoadCycle(cycleStartTime: 21.0, ambient: 32.5, puLoad: 0.88), LoadCycle(cycleStartTime: 24.0, ambient: 30.0, puLoad: 0.73)]

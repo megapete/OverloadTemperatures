@@ -15,7 +15,10 @@ class OverloadModel {
     // kVA used for tested (or calculated) losses
     let kvaBaseForLoss:Double
     
-    // cooling mode that the overload calculations will be done with
+    // The kVA used as the base for overload calculations
+    let kVABaseForOverLoad:Double
+    
+    // cooling mode that the overload calculations will be done with (corresponds to kVABaseForOverLoad)
     let coolingMode:C57_91_CoolingType
     
     // tested or calculated temperatures at kvaBaseForTemperatures
@@ -34,14 +37,15 @@ class OverloadModel {
     var windingTau:Double
     var hotspotHeightPU:Double
     
-    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, coolingMode:C57_91_CoolingType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double, windingTau:Double = 5.0, hotspotHeightPU:Double = 1.0) {
+    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, kVABaseForOverLoad:Double, coolingMode:C57_91_CoolingType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double, windingTau:Double = 5.0, hotspotHeightPU:Double = 1.0) {
         
         self.kvaBaseForTemperatures = kvaBaseForTemperatures
         self.kvaBaseForLoss = kvaBaseForLoss
+        self.kVABaseForOverLoad = kVABaseForOverLoad
         self.coolingMode = coolingMode
         self.testedTemperatures = testedTemperatures
         self.testedLosses = testedLosses
-        self.maxOverloadTemps = Temperatures()
+        self.maxOverloadTemps = Temperatures(commonTemp: -100.0)
         self.massOfCore = massOfCore
         self.massOfFluid = massOfFluid
         self.massOfTank = massOfTank
@@ -50,4 +54,12 @@ class OverloadModel {
         self.windingTau = windingTau
     }
     
+    func DoOverloadCalculations(loadCycles:[LoadCycle]) {
+        
+    }
+    
+    func CalculateTempsForLoadCycle(startingTemps:Temperatures, loadCycle:LoadCycle, withCoreOverExcitation:Bool = false) -> Temperatures {
+        
+        
+    }
 }

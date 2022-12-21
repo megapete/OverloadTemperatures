@@ -29,9 +29,71 @@ struct Losses {
             self.windingEddyLoss = newValue * self.windingResistiveLoss
         }
     }
-    var windingHotspotEddyLossPU:Double
+    
+    private var hotSpotEddyLossPU_store:Double
+    
+    var windingHotspotEddyLossPU:Double {
+        
+        get {
+            
+            return hotSpotEddyLossPU_store
+        }
+        
+        set {
+            
+            hotSpotEddyLossPU_store = max(newValue, windingAvergeEddyLossPU)
+        }
+    }
+    
     var strayLoss:Double
     
+    init(conductorType:C57_91_ConductorType, referenceTemperature:Double, coreLoss:Double, coreLossWithOverexcitation:Double, windingResistiveLoss:Double, windingEddyLoss:Double, windingHotspotEddyLossPU:Double, strayLoss:Double)
+    {
+        self.conductorType = conductorType
+        self.referenceTemperature = referenceTemperature
+        self.coreLoss = coreLoss
+        self.coreLossWithOverexcitation = coreLossWithOverexcitation
+        self.windingResistiveLoss = windingResistiveLoss
+        self.windingEddyLoss = windingEddyLoss
+        let eddyLossPU = windingEddyLoss / windingResistiveLoss
+        self.hotSpotEddyLossPU_store = max(eddyLossPU, windingHotspotEddyLossPU)
+        self.strayLoss = strayLoss
+    }
+    
+    var totalLoss:Double {
+        
+        get {
+            
+            return coreLoss + windingResistiveLoss + windingEddyLoss + strayLoss
+        }
+    }
+    
+    func LossesAtLoadAndTemperature(K:Double, newTemp:Double) -> Losses {
+        
+        var result = self
+        
+        let kSquared = K * K
+        let tempCorr = TemperatureCorrectionFactor(newTemp: newTemp)
+        
+        result.windingResistiveLoss *= (kSquared * tempCorr)
+        result.windingEddyLoss *= (kSquared / tempCorr)
+        result.strayLoss *= (kSquared / tempCorr)
+        
+        return result
+    }
+    
+    func LossesAtLoadFactor(K:Double) -> Losses {
+        
+        var result = self
+        
+        let kSquared = K * K
+        
+        result.windingResistiveLoss *= kSquared
+        result.windingEddyLoss *= kSquared
+        result.strayLoss *= kSquared
+        
+        return result
+    }
     
     // wrapper for C57.91 equation G.5)
     func TemperatureCorrectionFactor(newTemp:Double) -> Double {
