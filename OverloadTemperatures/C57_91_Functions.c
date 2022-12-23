@@ -583,7 +583,7 @@ double Delta_Theta_ToverB(double QLOST_O, double PT, double delta_T, double z, d
     return result;
 }
 
-/* Function G.27 Stability requirement (NOTE: This function checks that the time interval (Δt) is small enough so that the systems of equations are stable. There are 4 different inequalities defined by the standard. All of them are combined into this single function. If the 'useSimplified' (or cType is ODAF) field is set, G.27D (G.27C) is used with parameters τW and Δt and the remaining input parameters are ignored (the calling routine must still provide a viable pointer fo rthe maxDeltaT parameter). The temperature and viscosity parameters are all passed as 2-element arrays where the first element is the average temperature and the second element is hot-spot) The 'maxDeltaT' parameter is set to the maximum value of Δt that will satisfy the criteria.
+/* Function G.27 Stability requirement (NOTE: This function checks that the time interval (Δt) is small enough so that the systems of equations are stable. There are 4 different inequalities defined by the standard. All of them are combined into this single function. If the 'useSimplified' (or cType is ODAF) field is set, G.27D (G.27C) is used with parameters τW and Δt and the remaining input parameters are ignored (the calling routine must still provide a viable pointer for the maxDeltaT parameter). The temperature and viscosity parameters are all passed as 2-element arrays where the first element is the average temperature and the second element is hot-spot) The 'maxDeltaT' parameter is set to the maximum value of Δt that will satisfy the criteria.
  
  τW / Δt > ((ΘX,1 - ΘXXO,1) / (ΘX,R - ΘXXO,R))^1/4 * (μX,R / μX,1)^1/4
  
@@ -636,7 +636,8 @@ bool TestStability(bool useSimplified, C57_91_CoolingType cType, double tau_W, d
     if (maxDeltaT != NULL) {
         
         double maxDT = (tau_W / checkValue[0] < tau_W / checkValue[1] ? tau_W / checkValue[0] : tau_W / checkValue[1]);
-        *maxDeltaT = maxDT;
+        // the maxDT calculated above would actually end up being exactly equal to (τW / Δt) and not strictly "less than" so we subtract 0.1% from the value
+        *maxDeltaT = maxDT * 0.999;
     }
     
     return testValue >= checkValue[0] && testValue >= checkValue[1];

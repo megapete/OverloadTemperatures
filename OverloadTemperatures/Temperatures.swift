@@ -12,6 +12,8 @@ struct Temperatures {
     var ambientTemperature:Double
     
     var bottomFluidTemperature:Double
+    var topFluidTemperatureInCoolingDucts:Double
+    var topFluidTemperatureInTankAndRads:Double
     
     var averageFluidTemperatureInCoolingDucts:Double {
         
@@ -27,13 +29,17 @@ struct Temperatures {
             return (topFluidTemperatureInTankAndRads + bottomFluidTemperature) / 2
         }
     }
+    
     var averageWindingTemperature:Double
-    
-    var topFluidTemperatureInCoolingDucts:Double
-    var topFluidTemperatureInTankAndRads:Double
-    var hotSpotFluidTemperature:Double
-    
     var hotSpotWindingTemperature:Double
+    
+    // The height (in PU) of the hotspot with respect to the bottom of the coil (1 = pyhsical top of the coil)
+    var hotSpotLocationPU:Double
+    
+    var hotSpotFluidTemperature:Double {
+        
+        return self.bottomFluidTemperature + Delta_Theta_WOoverBO(self.hotSpotLocationPU, self.bottomFluidTemperature, self.topFluidTemperatureInCoolingDucts)
+    }
     
     // A couple of enums to make it easier to quickly create "standard" temp profiles.
     enum StandardTemp {
@@ -43,17 +49,15 @@ struct Temperatures {
     }
     
     // A more useful initializer for our use
-    init(ambientTemperature:Double = 20.0, averageWdgTempRise:Double, hotspotWdgTempRise:Double, topOilRise:Double, bottomOilRise:Double) {
+    init(ambientTemperature:Double = 20.0, averageWdgTempRise:Double, hotspotWdgTempRise:Double, hotSpotLocationPU:Double, topOilRise:Double, bottomOilRise:Double) {
         
         self.ambientTemperature = ambientTemperature
         self.bottomFluidTemperature = ambientTemperature + bottomOilRise
         self.topFluidTemperatureInCoolingDucts = ambientTemperature + topOilRise
         self.topFluidTemperatureInTankAndRads = self.topFluidTemperatureInCoolingDucts
-        self.hotSpotFluidTemperature = self.topFluidTemperatureInCoolingDucts
+        self.hotSpotLocationPU = hotSpotLocationPU
         self.averageWindingTemperature = ambientTemperature + averageWdgTempRise
         self.hotSpotWindingTemperature = ambientTemperature + hotspotWdgTempRise
-        // self.averageFluidTemperatureInCoolingDucts = (topOilRise + bottomOilRise) / 2.0 + ambientTemperature
-        // self.averageFluidTemperatureInTankAndRads = self.averageFluidTemperatureInCoolingDucts
     }
     
     // A way to set all the temperatures to the same value (useful for setting a variable that tracks max temps, hint, hint)
@@ -63,21 +67,19 @@ struct Temperatures {
         self.bottomFluidTemperature = commonTemp
         self.topFluidTemperatureInCoolingDucts = commonTemp
         self.topFluidTemperatureInTankAndRads = commonTemp
-        self.hotSpotFluidTemperature = commonTemp
+        self.hotSpotLocationPU = 1.0
         self.averageWindingTemperature = commonTemp
         self.hotSpotWindingTemperature = commonTemp
     }
     
     // And apparently because we have defined other inits, we have to explicitly create the "default" initializer
-    init(ambientTemperature:Double = 20.0, bottomFluidTemperature:Double = 20.0, averageWindingTemperature:Double = 20.0, topFluidTemperature:Double = 20.0,  hotSpotWindingTemperature:Double = 20.0) {
+    init(ambientTemperature:Double = 20.0, bottomFluidTemperature:Double = 20.0, averageWindingTemperature:Double = 20.0, topFluidTemperature:Double = 20.0,  hotSpotWindingTemperature:Double = 20.0, hotSpotLocationPU:Double = 1.0) {
         
         self.ambientTemperature = ambientTemperature
         self.bottomFluidTemperature = bottomFluidTemperature
         self.topFluidTemperatureInCoolingDucts = topFluidTemperature
         self.topFluidTemperatureInTankAndRads = topFluidTemperature
-        self.hotSpotFluidTemperature = topFluidTemperature
-        // self.averageFluidTemperatureInCoolingDucts = (topFluidTemperature + bottomFluidTemperature) / 2.0
-        // self.averageFluidTemperatureInTankAndRads = (topFluidTemperature + bottomFluidTemperature) / 2.0
+        self.hotSpotLocationPU = hotSpotLocationPU
         self.averageWindingTemperature = averageWindingTemperature
         self.hotSpotWindingTemperature = hotSpotWindingTemperature
     }
@@ -110,9 +112,7 @@ struct Temperatures {
         self.averageWindingTemperature = self.ambientTemperature + averageWdgRise
         self.topFluidTemperatureInTankAndRads = self.ambientTemperature + topFluidRise
         self.topFluidTemperatureInCoolingDucts = self.topFluidTemperatureInTankAndRads
-        self.hotSpotFluidTemperature = topFluidTemperatureInCoolingDucts
+        self.hotSpotLocationPU = 1.0
         self.bottomFluidTemperature = self.topFluidTemperatureInTankAndRads - topToBottomDiff
-        // self.averageFluidTemperatureInTankAndRads = (self.topFluidTemperatureInTankAndRads + self.bottomFluidTemperature) / 2.0
-        // self.averageFluidTemperatureInCoolingDucts = (self.topFluidTemperatureInCoolingDucts + self.bottomFluidTemperature) / 2.0
     }
 }

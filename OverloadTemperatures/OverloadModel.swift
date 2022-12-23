@@ -21,6 +21,9 @@ class OverloadModel {
     // cooling mode that the overload calculations will be done with (corresponds to kVABaseForOverLoad)
     let coolingMode:C57_91_CoolingType
     
+    // fluid type
+    let fluidType:C57_91_FluidType
+    
     // tested or calculated temperatures at kvaBaseForTemperatures
     var testedTemperatures:Temperatures
     // tested or calculated losses at kvaBaseForLoss
@@ -29,6 +32,8 @@ class OverloadModel {
     struct MaxTemp {
         
         let temp:Double
+        
+        // time in minutes
         let time:Double
     }
     
@@ -46,10 +51,11 @@ class OverloadModel {
     var massOfWindings:Double
     
     var windingTau:Double
-    var hotspotHeightPU:Double
+    // var hotspotHeightPU:Double
     
     struct SavedData {
         
+        // Time in minutes after 'start'
         let time:Double
         let loadPU:Double
         let temps:Temperatures
@@ -58,19 +64,28 @@ class OverloadModel {
     var overloadData:[SavedData] = []
     let dataInterval:Double
     
-    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, kVABaseForOverLoad:Double, coolingMode:C57_91_CoolingType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double, windingTau:Double = 5.0, hotspotHeightPU:Double = 1.0, dataInterval:Double = 0.5) {
+    // sum of masses times specific heats
+    var SumM_Cp:Double {
+        
+        get {
+            
+            return SumMCp(massOfTank, SPECIFIC_HEAT_STEEL, massOfCore, SPECIFIC_HEAT_CORESTEEL, massOfFluid, AppController.StdFluids[Int(self.fluidType.rawValue)].Cp)
+        }
+    }
+    
+    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, kVABaseForOverLoad:Double, coolingMode:C57_91_CoolingType, fluidType:C57_91_FluidType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double, windingTau:Double = 5.0, dataInterval:Double = 0.5) {
         
         self.kvaBaseForTemperatures = kvaBaseForTemperatures
         self.kvaBaseForLoss = kvaBaseForLoss
         self.kVABaseForOverLoad = kVABaseForOverLoad
         self.coolingMode = coolingMode
+        self.fluidType = fluidType
         self.testedTemperatures = testedTemperatures
         self.testedLosses = testedLosses
         self.massOfCore = massOfCore
         self.massOfFluid = massOfFluid
         self.massOfTank = massOfTank
         self.massOfWindings = massOfWinding
-        self.hotspotHeightPU = hotspotHeightPU
         self.windingTau = windingTau
         self.dataInterval = dataInterval
     }
@@ -79,7 +94,7 @@ class OverloadModel {
     /// - Parameter loadCycles: A non-empty array of LoadCycles.
     /// - Note: The loadCycles array must start with a LoadCycle of time 0 and end with a LoadCycle that has the same ambient and load as the first LoadCycle in the array. Otherwise, the function returns without doing anything.
     /// - Parameter saveInterval: The interval (in hours) for saving temperature data
-    func DoOverloadCalculations(loadCycles:[LoadCycle], saveInterval:Double) {
+    func DoOverloadCalculations(loadCycles:[LoadCycle], saveInterval:Double, withCoreOverExcitation:Bool = false) {
         
         if loadCycles.isEmpty {
             
@@ -103,8 +118,8 @@ class OverloadModel {
         var currentTemps:Temperatures = self.testedTemperatures
         self.maxHotspot = MaxTemp(temp: currentTemps.hotSpotWindingTemperature, time: 0.0)
         self.maxAverageOil = MaxTemp(temp: currentTemps.averageFluidTemperatureInCoolingDucts, time: 0.0)
-        var lastDataSavedTime = 0.0
-        self.overloadData.append(SavedData(time: lastDataSavedTime, loadPU: 1.0, temps: currentTemps))
+        self.overloadData.append(SavedData(time: 0.0, loadPU: 1.0, temps: currentTemps))
+        var nextDataSavedTime = saveInterval * 60.0
         
         var currentDeltaT = 0.5 // minutes
         var maxDeltaT = 0.0
@@ -114,18 +129,57 @@ class OverloadModel {
             currentDeltaT = maxDeltaT
         }
         
-        var currentTime = 0.0
+        var currentTime = currentDeltaT
         var currentLoadCycleIndex = 0
+        // var nextLoadCycleIndex = 1
+        let endTime = lastLoadCycle.cycleStartTime * 60.0
         
+        var wdgTempR = [self.testedTemperatures.averageWindingTemperature, self.testedTemperatures.hotSpotWindingTemperature]
+        var oilTempR = [self.testedTemperatures.averageFluidTemperatureInCoolingDucts, self.testedTemperatures.hotSpotFluidTemperature]
+        // line 1320-133 of the BASIC program says to use the average of the winding and oil temps for viscosity calcs
+        var oilViscR = [MU(self.fluidType, (wdgTempR[0] + oilTempR[0]) / 2.0), MU(self.fluidType, (wdgTempR[1] + oilTempR[1]) / 2.0)]
         
-        for nextLoadCycle in loadCycles {
+        while currentTime < endTime && currentLoadCycleIndex < loadCycles.count - 1 {
             
-            let newTemps = CalculateTempsForLoadCycle(startingTemps: currentTemps, loadCycle: nextLoadCycle)
+            let currentLoadCycle = loadCycles[currentLoadCycleIndex]
+            let nextLoadCycleStartTime = loadCycles[currentLoadCycleIndex+1].cycleStartTime * 60.0
             
-            if newTemps.hotSpotWindingTemperature > self.maxHotspot.temp {
+            while currentTime < nextLoadCycleStartTime {
                 
+                let newTemps = CalculateTempsForLoadCycle(startingTemps: currentTemps, loadCycle: currentLoadCycle, withCoreOverExcitation: withCoreOverExcitation)
+                
+                if currentTime >= nextDataSavedTime {
+                    
+                    self.overloadData.append(SavedData(time: currentTime, loadPU: currentLoadCycle.puLoad, temps: newTemps))
+                    nextDataSavedTime += saveInterval
+                }
+                
+                if newTemps.hotSpotWindingTemperature > self.maxHotspot.temp {
+                    
+                    self.maxHotspot = MaxTemp(temp: newTemps.hotSpotWindingTemperature, time: currentTime)
+                }
+                
+                if newTemps.averageFluidTemperatureInCoolingDucts > self.maxAverageOil.temp {
+                    
+                    self.maxAverageOil = MaxTemp(temp: newTemps.averageFluidTemperatureInCoolingDucts, time: currentTime)
+                }
+                
+                currentTemps = newTemps
+                
+                var wdgTemp1 = [currentTemps.averageWindingTemperature, currentTemps.hotSpotWindingTemperature]
+                var oilTemp1 = [currentTemps.averageFluidTemperatureInCoolingDucts, currentTemps.hotSpotFluidTemperature]
+                // line 1320-133 of the BASIC program says to use the average of the winding and oil temps for viscosity calcs
+                var oilVisc1 = [MU(self.fluidType, (wdgTemp1[0] + oilTemp1[0]) / 2.0), MU(self.fluidType, (wdgTemp1[1] + oilTemp1[1]) / 2.0)]
+                
+                if !TestStability(false, self.coolingMode, self.windingTau, currentDeltaT, &maxDeltaT, &wdgTemp1, &wdgTempR, &oilTemp1, &oilTempR, &oilVisc1, &oilViscR) {
+                    
+                    currentDeltaT = maxDeltaT
+                }
+                
+                currentTime += currentDeltaT
             }
             
+            currentLoadCycleIndex += 1
             
         }
     }

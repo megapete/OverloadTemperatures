@@ -59,7 +59,7 @@ typedef CF_ENUM(int, C57_91_FluidType) {
 
 #else // non-Apple implementation
 
-// _Nonnull and _Nullable only really make sense for Swift, so we define dummy macros that do nothing in C/C++ (ie: Windows)
+// _Nonnull and _Nullable are required for Swift but nothing else, so we define dummy macros that do nothing in C/C++ (ie: Windows)
 #ifndef _Nonnull
 #define _Nonnull
 #endif
@@ -369,8 +369,8 @@ double Delta_Theta_ToverB(double QLOST_O, double PT, double delta_T, double z, d
 /// - Parameter wdgTemp_R: An array of two doubles (°C):  Element 0: the average winding temperature at rated load (tested); Element 1: the winding hottest-spot temperature at rated load
 /// - Parameter oilTemp_1: An array of two doubles (°C):  Element 0: the average temperature of fluid in cooling ducts at the prior time; Element 1: the temperature of oil adjacent to winding hot spot
 /// - Parameter oilTemp_R: An array of two doubles (°C):  Element 0: the average temperature of fluid in cooling ducts at rated load; Element 1: the temperature of oil adjacent to winding hot spot at rated load
-/// - Parameter viscosity_1: An array of two doubles (cP):  Element 0: tthe viscosity of fluid for average winding temperature rise at the prior time; Element 1: the viscosity of fluid for hot-spot calculation at the prior time
-/// - Parameter viscosity_R: An array of two doubles (cP):  Element 0: tthe viscosity of fluid for average winding temperature rise at rated load; Element 1: the viscosity of fluid for hot-spot calculation at rated load
+/// - Parameter viscosity_1: An array of two doubles (cP):  Element 0: tthe viscosity of fluid for average winding temperature at the prior time; Element 1: the viscosity of fluid for hot-spot calculation at the prior time
+/// - Parameter viscosity_R: An array of two doubles (cP):  Element 0: tthe viscosity of fluid for average winding temperature  at rated load; Element 1: the viscosity of fluid for hot-spot calculation at rated load
 /// - Returns: True if the systems of equations are stable, otherwise false. On exit, the maxDeltaT pointer will point to the maximum value of delta_T that can be used and still have the equations be stable.
 bool TestStability(bool useSimplified, C57_91_CoolingType cType, double tau_W, double delta_T, double *_Nonnull maxDeltaT, double *_Nullable wdgTemp_1, double *_Nullable wdgTemp_R, double *_Nullable oilTemp_1, double *_Nullable oilTemp_R, double *_Nullable viscosity_1, double *_Nullable viscosity_R);
 
