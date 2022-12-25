@@ -144,9 +144,13 @@ class OverloadModel {
             let currentLoadCycle = loadCycles[currentLoadCycleIndex]
             let nextLoadCycleStartTime = loadCycles[currentLoadCycleIndex+1].cycleStartTime * 60.0
             
+            let loadSlope = (loadCycles[currentLoadCycleIndex+1].puLoad - currentLoadCycle.puLoad) / (nextLoadCycleStartTime - currentLoadCycle.cycleStartTime)
+            
+            let ambientSlope = (loadCycles[currentLoadCycleIndex+1].ambient - currentLoadCycle.ambient) / (nextLoadCycleStartTime - currentLoadCycle.cycleStartTime)
+            
             while currentTime < nextLoadCycleStartTime {
                 
-                let newTemps = CalculateTempsForLoadCycle(startingTemps: currentTemps, loadCycle: currentLoadCycle, withCoreOverExcitation: withCoreOverExcitation)
+                let newTemps = CalculateTempsForLoadCycle(atTime: currentTime, startingTemps: currentTemps, loadCycle: currentLoadCycle, loadSlope: loadSlope, ambientSlope: ambientSlope, withCoreOverExcitation: withCoreOverExcitation)
                 
                 if currentTime >= nextDataSavedTime {
                     
@@ -184,9 +188,12 @@ class OverloadModel {
         }
     }
     
-    func CalculateTempsForLoadCycle(startingTemps:Temperatures, loadCycle:LoadCycle, withCoreOverExcitation:Bool = false) -> Temperatures {
+    func CalculateTempsForLoadCycle(atTime:Double, startingTemps:Temperatures, loadCycle:LoadCycle, loadSlope:Double, ambientSlope:Double,  withCoreOverExcitation:Bool = false) -> Temperatures {
         
         var endingTemps:Temperatures = Temperatures()
+        
+        let currentK = loadCycle.puLoad + loadSlope * (atTime - loadCycle.cycleStartTime)
+        let currentAmbient = endingTemps.ambientTemperature + ambientSlope * (atTime - loadCycle.cycleStartTime)
         
         
         
