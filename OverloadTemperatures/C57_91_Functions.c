@@ -149,7 +149,7 @@ double QLOST_W(C57_91_CoolingType cType, double Pe, double Pw, double theta_DAO_
         muFactor = pow(mu_W_R / mu_W_1, 0.25);
     }
     
-    double result = pow((theta_W_1 - theta_DAO_1) / (theta_W_R - theta_DAO_R), 1.25) * muFactor * delta_T;
+    double result = pow((theta_W_1 - theta_DAO_1) / (theta_W_R - theta_DAO_R), 1.25) * muFactor * (Pw + Pe) * delta_T;
     
     return result;
 }

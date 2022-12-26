@@ -47,6 +47,13 @@ struct Losses {
     
     var strayLoss:Double
     
+    var windingLoss:Double {
+        
+        get {
+            return windingResistiveLoss + windingEddyLoss
+        }
+    }
+    
     init(conductorType:C57_91_ConductorType, referenceTemperature:Double, coreLoss:Double, coreLossWithOverexcitation:Double, windingResistiveLoss:Double, windingEddyLoss:Double, windingHotspotEddyLossPU:Double, strayLoss:Double)
     {
         self.conductorType = conductorType
@@ -75,6 +82,7 @@ struct Losses {
         let kSquared = K * K
         let tempCorr = TemperatureCorrectionFactor(newTemp: newTemp)
         
+        result.referenceTemperature = newTemp
         result.windingResistiveLoss *= (kSquared * tempCorr)
         result.windingEddyLoss *= (kSquared / tempCorr)
         result.strayLoss *= (kSquared / tempCorr)

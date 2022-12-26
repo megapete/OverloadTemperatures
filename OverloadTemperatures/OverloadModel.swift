@@ -129,28 +129,36 @@ class OverloadModel {
             currentDeltaT = maxDeltaT
         }
         
+        // lastTime and currentTime are in minutes
+        var lastTime = 0.0
         var currentTime = currentDeltaT
         var currentLoadCycleIndex = 0
-        // var nextLoadCycleIndex = 1
+        // endTime is in minutes
         let endTime = lastLoadCycle.cycleStartTime * 60.0
         
         var wdgTempR = [self.testedTemperatures.averageWindingTemperature, self.testedTemperatures.hotSpotWindingTemperature]
         var oilTempR = [self.testedTemperatures.averageFluidTemperatureInCoolingDucts, self.testedTemperatures.hotSpotFluidTemperature]
         // line 1320-133 of the BASIC program says to use the average of the winding and oil temps for viscosity calcs
-        var oilViscR = [MU(self.fluidType, (wdgTempR[0] + oilTempR[0]) / 2.0), MU(self.fluidType, (wdgTempR[1] + oilTempR[1]) / 2.0)]
+        //var oilViscR = [MU(self.fluidType, (wdgTempR[0] + oilTempR[0]) / 2.0), MU(self.fluidType, (wdgTempR[1] + oilTempR[1]) / 2.0)]
+        let oilViscTuple = FluidViscosity(atTemps: self.testedTemperatures)
+        var oilViscR = [oilViscTuple.aveVisc, oilViscTuple.hotspotVisc]
         
         while currentTime < endTime && currentLoadCycleIndex < loadCycles.count - 1 {
             
             let currentLoadCycle = loadCycles[currentLoadCycleIndex]
+            // nextLoadCycleStartTime is in minutes
             let nextLoadCycleStartTime = loadCycles[currentLoadCycleIndex+1].cycleStartTime * 60.0
             
-            let loadSlope = (loadCycles[currentLoadCycleIndex+1].puLoad - currentLoadCycle.puLoad) / (nextLoadCycleStartTime - currentLoadCycle.cycleStartTime)
-            
-            let ambientSlope = (loadCycles[currentLoadCycleIndex+1].ambient - currentLoadCycle.ambient) / (nextLoadCycleStartTime - currentLoadCycle.cycleStartTime)
+            // The BASIC program will crash if a step-change in load occurs (for the definition of a step-change, see C57.91-2011 page 83, in clause (g)) since the denominator in the slope equation will equal 0 (unless BASIC doesn't react to a divide-by-zero error, which I strongly doubt). We will set it to a very small number instead:
+            let loadCycleTimeStep = max(1.0E-12, nextLoadCycleStartTime - currentLoadCycle.cycleStartTime * 60.0)
+            // pu per minute
+            let loadSlope = (loadCycles[currentLoadCycleIndex+1].puLoad - currentLoadCycle.puLoad) / loadCycleTimeStep
+            // °C per minute
+            let ambientSlope = (loadCycles[currentLoadCycleIndex+1].ambient - currentLoadCycle.ambient) / loadCycleTimeStep
             
             while currentTime < nextLoadCycleStartTime {
                 
-                let newTemps = CalculateTempsForLoadCycle(atTime: currentTime, startingTemps: currentTemps, loadCycle: currentLoadCycle, loadSlope: loadSlope, ambientSlope: ambientSlope, withCoreOverExcitation: withCoreOverExcitation)
+                let newTemps = CalculateTempsForLoadCycle(atTime: currentTime, lastTime: lastTime, startingTemps: currentTemps, loadCycle: currentLoadCycle, loadSlope: loadSlope, ambientSlope: ambientSlope, withCoreOverExcitation: withCoreOverExcitation)
                 
                 if currentTime >= nextDataSavedTime {
                     
@@ -173,13 +181,15 @@ class OverloadModel {
                 var wdgTemp1 = [currentTemps.averageWindingTemperature, currentTemps.hotSpotWindingTemperature]
                 var oilTemp1 = [currentTemps.averageFluidTemperatureInCoolingDucts, currentTemps.hotSpotFluidTemperature]
                 // line 1320-133 of the BASIC program says to use the average of the winding and oil temps for viscosity calcs
-                var oilVisc1 = [MU(self.fluidType, (wdgTemp1[0] + oilTemp1[0]) / 2.0), MU(self.fluidType, (wdgTemp1[1] + oilTemp1[1]) / 2.0)]
+                let oilViscTuple = FluidViscosity(atTemps: currentTemps)
+                var oilVisc1 = [oilViscTuple.aveVisc, oilViscTuple.hotspotVisc]
                 
                 if !TestStability(false, self.coolingMode, self.windingTau, currentDeltaT, &maxDeltaT, &wdgTemp1, &wdgTempR, &oilTemp1, &oilTempR, &oilVisc1, &oilViscR) {
                     
                     currentDeltaT = maxDeltaT
                 }
                 
+                lastTime = currentTime
                 currentTime += currentDeltaT
             }
             
@@ -188,15 +198,48 @@ class OverloadModel {
         }
     }
     
-    func CalculateTempsForLoadCycle(atTime:Double, startingTemps:Temperatures, loadCycle:LoadCycle, loadSlope:Double, ambientSlope:Double,  withCoreOverExcitation:Bool = false) -> Temperatures {
+    /// Calculate the new temperatures for the next time interval
+    /// - Parameter atTime:the time at which to calculate new temperatures, in minutes since the start of the simulation (corresponds to t2 in the standard)
+    /// - Parameter lastTime: the time at which the last set of temperatures was calculated, in minutes since the start of the simulation
+    /// - Parameter startingTemps: the temperatures calculated at 'lastTime'
+    /// - Parameter loadCycle: the current LoadCycle
+    /// - Parameter loadSlope: the slope of the line between the load at loadCycle and the load at the next LoadCycle, in pu/minute
+    /// - Parameter ambientSlople: the slope of the line between the load at loadCycle and the load at the next LoadCycle, in °C/minute
+    /// - Parameter withCoreOverExcitation: if true, use the  core losses with core overexcitation, otherwise normal core losses
+    /// - Returns: The temperatures after the time interval
+    func CalculateTempsForLoadCycle(atTime:Double, lastTime:Double, startingTemps:Temperatures, loadCycle:LoadCycle, loadSlope:Double, ambientSlope:Double,  withCoreOverExcitation:Bool = false) -> Temperatures {
         
         var endingTemps:Temperatures = Temperatures()
         
-        let currentK = loadCycle.puLoad + loadSlope * (atTime - loadCycle.cycleStartTime)
-        let currentAmbient = endingTemps.ambientTemperature + ambientSlope * (atTime - loadCycle.cycleStartTime)
+        // BASIC program uses PL as the variable name for the "PU Load" instead of th emore familiar "K", which we use here
+        let currentK = loadCycle.puLoad + loadSlope * (atTime - loadCycle.cycleStartTime * 60.0)
+        let currentAmbient = startingTemps.ambientTemperature + ambientSlope * (atTime - loadCycle.cycleStartTime * 60.0)
+        
+        // Get the heat generated by the windings
+        let lossK = currentK * self.kVABaseForOverLoad / self.kvaBaseForLoss
+        let corrLoss = self.testedLosses.LossesAtLoadAndTemperature(K: lossK, newTemp: startingTemps.averageWindingTemperature)
+        let heatGeneratedByWdgs = (lastTime - atTime) * corrLoss.windingLoss
+        
+        var heatLostByWdgs = 0.0
+        if startingTemps.averageWindingTemperature > startingTemps.averageFluidTemperatureInCoolingDucts {
+            
+            heatLostByWdgs = QLOST_W(self.coolingMode, corrLoss.windingEddyLoss, corrLoss.windingResistiveLoss, startingTemps.averageFluidTemperatureInCoolingDucts, self.testedTemperatures.averageFluidTemperatureInCoolingDucts, startingTemps.averageWindingTemperature, self.testedTemperatures.averageWindingTemperature, lastTime - atTime, FluidViscosity(atTemps: startingTemps).aveVisc, FluidViscosity(atTemps: self.testedTemperatures).aveVisc)
+        }
         
         
         
         return endingTemps
     }
+    
+    /// Get the oil viscosity at the average temperature and hotspot location
+    /// - Parameter atTemps: the temperatures at which to do the calculation
+    /// - Returns: An tuple of Double, where the first element is the average viscosity and the second is the viscosity at the hotspot
+    func FluidViscosity(atTemps:Temperatures) -> (aveVisc:Double, hotspotVisc:Double) {
+        
+        var wdgTemp = [atTemps.averageWindingTemperature, atTemps.hotSpotWindingTemperature]
+        var oilTemp = [atTemps.averageFluidTemperatureInCoolingDucts, atTemps.hotSpotFluidTemperature]
+        
+        return (MU(self.fluidType, (wdgTemp[0] + oilTemp[0]) / 2.0), MU(self.fluidType, (wdgTemp[1] + oilTemp[1]) / 2.0))
+    }
+    
 }

@@ -9,7 +9,10 @@ import Foundation
 
 struct LoadCycle {
     
+    // in hours
     let cycleStartTime:Double
+    // in °C
     let ambient:Double
+    // as a multiple of rated load
     let puLoad:Double
 }
