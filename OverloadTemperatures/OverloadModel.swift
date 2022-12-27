@@ -261,8 +261,8 @@ class OverloadModel {
     /// - Returns: An tuple of Double, where the first element is the average viscosity and the second is the viscosity at the hotspot
     func FluidViscosity(atTemps:Temperatures) -> (aveVisc:Double, hotspotVisc:Double) {
         
-        var wdgTemp = [atTemps.averageWindingTemperature, atTemps.hotSpotWindingTemperature]
-        var oilTemp = [atTemps.averageFluidTemperatureInCoolingDucts, atTemps.hotSpotFluidTemperature]
+        let wdgTemp = [atTemps.averageWindingTemperature, atTemps.hotSpotWindingTemperature]
+        let oilTemp = [atTemps.averageFluidTemperatureInCoolingDucts, atTemps.hotSpotFluidTemperature]
         
         return (MU(self.fluidType, (wdgTemp[0] + oilTemp[0]) / 2.0), MU(self.fluidType, (wdgTemp[1] + oilTemp[1]) / 2.0))
     }
