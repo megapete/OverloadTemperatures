@@ -231,11 +231,12 @@ class OverloadModel {
         let lossK = currentK * self.kVABaseForOverLoad / self.kvaBaseForLoss
         let corrLoss = self.testedLosses.LossesAtLoadAndTemperature(K: lossK, newTemp: startingTemps.averageWindingTemperature)
         let heatGeneratedByWdgs = (atTime - lastTime) * corrLoss.windingLoss
+        let ratedLoss = self.testedLosses.LossesAtLoadFactor(K: lossK)
         
         var heatLostByWdgs = 0.0
         if startingTemps.averageWindingTemperature > startingTemps.averageFluidTemperatureInCoolingDucts {
             
-            heatLostByWdgs = QLOST_W(self.coolingMode, corrLoss.windingEddyLoss, corrLoss.windingResistiveLoss, startingTemps.averageFluidTemperatureInCoolingDucts, self.testedTemperatures.averageFluidTemperatureInCoolingDucts, startingTemps.averageWindingTemperature, self.testedTemperatures.averageWindingTemperature, atTime - lastTime, FluidViscosity(atTemps: startingTemps).aveVisc, FluidViscosity(atTemps: self.testedTemperatures).aveVisc)
+            heatLostByWdgs = QLOST_W(self.coolingMode, ratedLoss.windingEddyLoss, ratedLoss.windingResistiveLoss, startingTemps.averageFluidTemperatureInCoolingDucts, self.testedTemperatures.averageFluidTemperatureInCoolingDucts, startingTemps.averageWindingTemperature, self.testedTemperatures.averageWindingTemperature, atTime - lastTime, FluidViscosity(atTemps: startingTemps).aveVisc, FluidViscosity(atTemps: self.testedTemperatures).aveVisc)
         }
         
         // line 1760-1770: update average oil temp
@@ -249,9 +250,21 @@ class OverloadModel {
         let endingTopOilInDuctsTemp = startingTemps.bottomFluidTemperature + endingTopOverBottomRise
         let endingAverageOilInDuctsTemp = (startingTemps.bottomFluidTemperature + endingTopOilInDuctsTemp) / 2.0
         
-        // line 1800: update the temperature of oil adjacent to the hotspot and the hot-spot loss correction factor
-        let endingOilAdjacentToHotpsotTemp = startingTemps.bottomFluidTemperature + testedTemperatures.hotSpotLocationPU * endingTopOverBottomRise
+        // line 1800: update the temperature of oil adjacent to the hotspot, but then // line 1810: If (FluidTempAtTopOfDuct + 0.1)<TopFluidTempInTankAndRads then set TempOfOilAdjacentToHotSpot to TopFluidTempInTankAndRads. This looks like a fudge to make sure that the temperature of oil adjacent to the hotspot is at least as high as the top oil in the tank (probably to avoid it going too low during low load conditions).
+        let endingOilAdjacentToHotpsotTemp = (endingTopOilInDuctsTemp + 0.1) < startingTemps.topFluidTemperatureInTankAndRads ? startingTemps.topFluidTemperatureInTankAndRads : startingTemps.bottomFluidTemperature + testedTemperatures.hotSpotLocationPU * endingTopOverBottomRise
         
+        // Line 1820-1830: If hotspot temp is less than average winding temp and temp of oil adjacent to hotspot, set it to the higher of the two
+        let startingHotspotTemp = max(startingTemps.hotSpotWindingTemperature, endingAveWdgTemp, endingOilAdjacentToHotpsotTemp)
+        
+        // Line 1840: Calculate heat generated at hot spot
+        let corrHsLoss = self.testedLosses.LossesAtLoadAndTemperature(K: lossK, newTemp: startingHotspotTemp)
+        let heatGeneratedByHotspot = (atTime - lastTime) * corrHsLoss.windingHotspotLoss
+        
+        // Line 1850-1890: Calculate the viscosity and heat lost for hot-spot depending on the cooling mode
+        let heatLostByHotspot = QLOST_HS(self.coolingMode, ratedLoss.windingHotspotEddyLoss, ratedLoss.windingResistiveLoss, startingHotspotTemp, self.testedTemperatures.hotSpotWindingTemperature, endingOilAdjacentToHotpsotTemp, self.testedTemperatures.hotSpotFluidTemperature, atTime - lastTime, MU(self.fluidType, (startingHotspotTemp + endingOilAdjacentToHotpsotTemp) / 2.0), FluidViscosity(atTemps: self.testedTemperatures).hotspotVisc)
+        
+        // Line 1900: Calculate the winding hotspot temp
+        let endingHotspotTemperature = Theta_H_2(heatGeneratedByHotspot, heatLostByHotspot, self.MCp_Wdg, startingTemps.hotSpotWindingTemperature)
         
         return endingTemps
     }

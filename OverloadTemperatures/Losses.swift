@@ -45,6 +45,22 @@ struct Losses {
         }
     }
     
+    var windingHotspotEddyLoss:Double {
+        
+        get {
+            
+            return self.windingResistiveLoss * self.hotSpotEddyLossPU_store
+        }
+    }
+    
+    var windingHotspotLoss:Double {
+        
+        get {
+            
+            return self.windingResistiveLoss + windingHotspotEddyLoss
+        }
+    }
+    
     var strayLoss:Double
     
     var windingLoss:Double {
