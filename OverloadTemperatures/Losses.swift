@@ -83,12 +83,11 @@ struct Losses {
         self.strayLoss = strayLoss
     }
     
-    var totalLoss:Double {
+    func totalLoss(withOverExcitation:Bool) -> Double {
         
-        get {
-            
-            return coreLoss + windingResistiveLoss + windingEddyLoss + strayLoss
-        }
+        let useCoreloss:Double = withOverExcitation ? max(self.coreLoss, self.coreLossWithOverexcitation) : self.coreLoss
+        
+        return useCoreloss + windingResistiveLoss + windingEddyLoss + strayLoss
     }
     
     func LossesAtLoadAndTemperature(K:Double, newTemp:Double) -> Losses {
