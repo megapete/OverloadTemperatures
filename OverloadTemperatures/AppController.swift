@@ -40,7 +40,8 @@ class AppController: NSObject {
                 
         let loss = Losses(conductorType: .CU, referenceTemperature: 75.0, coreLoss: 36986.0, coreLossWithOverexcitation: 36986.0, windingResistiveLoss: 51690, windingEddyLoss: 0.0, windingHotspotEddyLossPU: 0.0, strayLoss: 21078.0)
         
-        let temperature = Temperatures(ambientTemperature: 20.0, averageWdgTempRise: 63.0, hotspotWdgTempRise: 80.0, hotSpotLocationPU: 1.0, topOilRise: 55.0, bottomOilRise: 25.0)
+        // let temperature = Temperatures(ambientTemperature: 20.0, averageWdgTempRise: 63.0, hotspotWdgTempRise: 80.0, hotSpotLocationPU: 1.0, topOilRise: 55.0, bottomOilRise: 25.0)
+        let temperature = Temperatures(ambientTemperature: 20.0, averageWdgTempRise: 63.0, hotspotWdgTempRise: 80.0, hotSpotLocationPU: 1.0, topOilRiseInDucts: 55.0, topOilRiseInTankAndRads: 55.0, bottomOilRise: 25.0)
         
         // The example in the standard only has the c/c weight, which we need to split into core and winding masses. We use the strange method of calculating MwCpw, then dividing by Cpw to come up with Mw. Of course, we will never need to do this...
         let massCoreAndCoil = 75600.0

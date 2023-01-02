@@ -48,16 +48,28 @@ struct Temperatures {
         case std_65_80
     }
     
-    // A more useful initializer for our use
-    init(ambientTemperature:Double = 20.0, averageWdgTempRise:Double, hotspotWdgTempRise:Double, hotSpotLocationPU:Double, topOilRise:Double, bottomOilRise:Double) {
+    // A more useful initializer for our use (uses temp rises and ambient to calculate temps)
+    init(ambientTemperature:Double, averageWdgTempRise:Double, hotspotWdgTempRise:Double, hotSpotLocationPU:Double, topOilRiseInDucts:Double, topOilRiseInTankAndRads:Double, bottomOilRise:Double) {
         
         self.ambientTemperature = ambientTemperature
         self.bottomFluidTemperature = ambientTemperature + bottomOilRise
-        self.topFluidTemperatureInCoolingDucts = ambientTemperature + topOilRise
-        self.topFluidTemperatureInTankAndRads = self.topFluidTemperatureInCoolingDucts
+        self.topFluidTemperatureInCoolingDucts = ambientTemperature + topOilRiseInDucts
+        self.topFluidTemperatureInTankAndRads = ambientTemperature + topOilRiseInTankAndRads
         self.hotSpotLocationPU = hotSpotLocationPU
         self.averageWindingTemperature = ambientTemperature + averageWdgTempRise
         self.hotSpotWindingTemperature = ambientTemperature + hotspotWdgTempRise
+    }
+    
+    // Another uuseful initilaizer, this one using actual tempertatures instead of rises
+    init(ambientTemperature:Double, averageWdgTemp:Double, hotspotWdgTemp:Double, hotSpotLocationPU:Double, topOilTempInDucts:Double, topOilTempInTankAndRads:Double, bottomOilTemp:Double) {
+        
+        self.ambientTemperature = ambientTemperature
+        self.bottomFluidTemperature = bottomOilTemp
+        self.topFluidTemperatureInCoolingDucts = topOilTempInDucts
+        self.topFluidTemperatureInTankAndRads = topOilTempInTankAndRads
+        self.hotSpotLocationPU = hotSpotLocationPU
+        self.averageWindingTemperature = averageWdgTemp
+        self.hotSpotWindingTemperature = hotspotWdgTemp
     }
     
     // A way to set all the temperatures to the same value (useful for setting a variable that tracks max temps, hint, hint)

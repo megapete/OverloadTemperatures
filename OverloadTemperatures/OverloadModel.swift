@@ -41,7 +41,9 @@ class OverloadModel {
     }
     
     var maxHotspot:MaxTemp = MaxTemp(temp: -100.0, time: -1.0)
+    var maxAveWdgTemp:MaxTemp = MaxTemp(temp: -100.0, time: -1.0)
     var maxAverageOil:MaxTemp = MaxTemp(temp: -100.0, time: -1.0)
+    var maxTopOil:MaxTemp = MaxTemp(temp: -100.0, time: -1.0)
     
     var xExponent:Double? = nil
     var yExponent:Double? = nil
@@ -56,7 +58,7 @@ class OverloadModel {
     var windingTau:Double
     // var hotspotHeightPU:Double
     
-    struct SavedData {
+    struct IntermediateData {
         
         // Time in minutes after 'start'
         let time:Double
@@ -64,7 +66,26 @@ class OverloadModel {
         let temps:Temperatures
     }
     
-    var overloadData:[SavedData] = []
+    struct CycleData {
+        
+        let intermediateData:[IntermediateData]
+        
+        let maxWdgHotspot:MaxTemp
+        let maxTopOil:MaxTemp
+        let maxWdgAveTemp:MaxTemp
+        let maxAverageOil:MaxTemp
+        
+        let agingFactor:Double
+        
+        static func NullData() -> CycleData {
+            
+            let nullTemp = MaxTemp(temp: -100.0, time: -100.0)
+            
+            return CycleData(intermediateData: [], maxWdgHotspot: nullTemp, maxTopOil: nullTemp, maxWdgAveTemp: nullTemp, maxAverageOil: nullTemp, agingFactor: -100.0)
+        }
+    }
+    
+    var overloadData:[IntermediateData] = []
     let dataInterval:Double
     
     // sum of masses times specific heats
@@ -106,17 +127,17 @@ class OverloadModel {
     /// - Parameter loadCycles: A non-empty array of LoadCycles.
     /// - Note: The loadCycles array must start with a LoadCycle of time 0 and end with a LoadCycle that has the same ambient and load as the first LoadCycle in the array. Otherwise, the function returns without doing anything.
     /// - Parameter saveInterval: The interval (in hours) for saving temperature data
-    func DoOverloadCalculations(loadCycles:[LoadCycle], saveInterval:Double, withCoreOverExcitation:Bool = false) {
+    func DoOverloadCalculations(loadCycles:[LoadCycle], saveInterval:Double, withCoreOverExcitation:Bool = false) -> CycleData {
         
         if loadCycles.isEmpty {
             
             DLog("loadCycles array is empty!")
-            return
+            return CycleData.NullData()
         }
         else if loadCycles[0].cycleStartTime != 0.0 {
             
             DLog("First load cycle mjst start at time 0!")
-            return
+            return CycleData.NullData()
         }
         
         let firstLoadCycle = loadCycles.first!
@@ -124,13 +145,13 @@ class OverloadModel {
         if firstLoadCycle.ambient != lastLoadCycle.ambient || firstLoadCycle.puLoad != lastLoadCycle.puLoad {
             
             DLog("First and last load cycles are not the same!")
-            return
+            return CycleData.NullData()
         }
         
         var currentTemps:Temperatures = self.testedTemperatures
         self.maxHotspot = MaxTemp(temp: currentTemps.hotSpotWindingTemperature, time: 0.0)
         self.maxAverageOil = MaxTemp(temp: currentTemps.averageFluidTemperatureInCoolingDucts, time: 0.0)
-        self.overloadData.append(SavedData(time: 0.0, loadPU: 1.0, temps: currentTemps))
+        self.overloadData.append(IntermediateData(time: 0.0, loadPU: 1.0, temps: currentTemps))
         var nextDataSavedTime = saveInterval * 60.0
         
         var currentDeltaT = 0.5 // minutes
@@ -155,6 +176,9 @@ class OverloadModel {
         let oilViscTuple = FluidViscosity(atTemps: self.testedTemperatures)
         var oilViscR = [oilViscTuple.aveVisc, oilViscTuple.hotspotVisc]
         
+        var agingSum = 0.0
+        // var finalTemps:Temperatures
+        
         while currentTime < endTime && currentLoadCycleIndex < loadCycles.count - 1 {
             
             let currentLoadCycle = loadCycles[currentLoadCycleIndex]
@@ -172,9 +196,14 @@ class OverloadModel {
                 
                 let newTemps = CalculateTempsForLoadCycle(atTime: currentTime, lastTime: lastTime, startingTemps: currentTemps, loadCycle: currentLoadCycle, loadSlope: loadSlope, ambientSlope: ambientSlope, withCoreOverExcitation: withCoreOverExcitation)
                 
+                // Line 2020-2030: Calculate aging acceleration factor & equivalent insulation aging over load cycle (see C57.92-2011 Section 5.2)
+                let agingExponent = (15000.0 / 383.0) - (15000.0 / (newTemps.hotSpotWindingTemperature + 273.0))
+                let agingAccelerationFactor = exp(agingExponent)
+                agingSum += agingAccelerationFactor * currentDeltaT
+                
                 if currentTime >= nextDataSavedTime {
                     
-                    self.overloadData.append(SavedData(time: currentTime, loadPU: currentLoadCycle.puLoad, temps: newTemps))
+                    self.overloadData.append(IntermediateData(time: currentTime, loadPU: currentLoadCycle.puLoad, temps: newTemps))
                     nextDataSavedTime += saveInterval
                 }
                 
@@ -183,9 +212,19 @@ class OverloadModel {
                     self.maxHotspot = MaxTemp(temp: newTemps.hotSpotWindingTemperature, time: currentTime)
                 }
                 
+                if newTemps.averageWindingTemperature > self.maxAveWdgTemp.temp {
+                    
+                    self.maxAveWdgTemp = MaxTemp(temp: newTemps.averageWindingTemperature, time: currentTime)
+                }
+                
                 if newTemps.averageFluidTemperatureInCoolingDucts > self.maxAverageOil.temp {
                     
                     self.maxAverageOil = MaxTemp(temp: newTemps.averageFluidTemperatureInCoolingDucts, time: currentTime)
+                }
+                
+                if newTemps.topFluidTemperatureInCoolingDucts > self.maxTopOil.temp {
+                    
+                    self.maxTopOil = MaxTemp(temp: newTemps.topFluidTemperatureInCoolingDucts, time: currentTime)
                 }
                 
                 currentTemps = newTemps
@@ -206,8 +245,15 @@ class OverloadModel {
             }
             
             currentLoadCycleIndex += 1
-            
         }
+        
+        // calculate the equivalent aging factor for the total time period
+        let totalAgingFactor = agingSum / currentTime
+        let finalTemps = CalculateTempsForLoadCycle(atTime: endTime, lastTime: endTime - currentDeltaT, startingTemps: currentTemps, loadCycle: lastLoadCycle, loadSlope: 0.0, ambientSlope: 0.0)
+        
+        let cycleData = CycleData(intermediateData: self.overloadData, maxWdgHotspot: self.maxHotspot, maxTopOil: self.maxAverageOil, maxWdgAveTemp: self.maxAveWdgTemp, maxAverageOil: self.maxAverageOil, agingFactor: totalAgingFactor)
+        
+        return cycleData
     }
     
     /// Calculate the new temperatures for the next time interval
@@ -220,8 +266,6 @@ class OverloadModel {
     /// - Parameter withCoreOverExcitation: if true, use the  core losses with core overexcitation, otherwise normal core losses
     /// - Returns: The temperatures after the time interval
     func CalculateTempsForLoadCycle(atTime:Double, lastTime:Double, startingTemps:Temperatures, loadCycle:LoadCycle, loadSlope:Double, ambientSlope:Double,  withCoreOverExcitation:Bool = false) -> Temperatures {
-        
-        var endingTemps:Temperatures = Temperatures()
         
         // BASIC program uses PL as the variable name for the "PU Load" instead of the more familiar "K", which we use here
         let currentK = loadCycle.puLoad + loadSlope * (atTime - loadCycle.cycleStartTime * 60.0)
@@ -246,9 +290,9 @@ class OverloadModel {
         // line 1780: update rise of top oil over bottom oil
         let endingTopOverBottomRise = Delta_Theta_DOoverBO(heatLostByWdgs, X, atTime - lastTime, corrLoss.windingResistiveLoss, corrLoss.windingEddyLoss, self.testedTemperatures.topFluidTemperatureInCoolingDucts, self.testedTemperatures.bottomFluidTemperature)
         
-        // line 1790: update the average and top oil in the ducts
+        // line 1790: update the average (not needed at this point) and top oil in the ducts
         var endingTopOilInDuctsTemp = startingTemps.bottomFluidTemperature + endingTopOverBottomRise
-        let endingAverageOilInDuctsTemp = (startingTemps.bottomFluidTemperature + endingTopOilInDuctsTemp) / 2.0
+        // let endingAverageOilInDuctsTemp = (startingTemps.bottomFluidTemperature + endingTopOilInDuctsTemp) / 2.0
         
         // line 1800: update the temperature of oil adjacent to the hotspot, but then // line 1810: If (FluidTempAtTopOfDuct + 0.1)<TopFluidTempInTankAndRads then set TempOfOilAdjacentToHotSpot to TopFluidTempInTankAndRads. This looks like a fudge to make sure that the temperature of oil adjacent to the hotspot is at least as high as the top oil in the tank (probably to avoid it going too low during low load conditions).
         let endingOilAdjacentToHotpsotTemp = (endingTopOilInDuctsTemp + 0.1) < startingTemps.topFluidTemperatureInTankAndRads ? startingTemps.topFluidTemperatureInTankAndRads : startingTemps.bottomFluidTemperature + testedTemperatures.hotSpotLocationPU * endingTopOverBottomRise
@@ -289,6 +333,8 @@ class OverloadModel {
         
         // Line 2010: If the fluid temp at the top of the duct is less than fluid temp at the bottom, set it to the temp at the bottom
         endingTopOilInDuctsTemp = max(endingTopOilInDuctsTemp, endingBottomOilTemperature)
+        
+        let endingTemps = Temperatures(ambientTemperature: endingAmbient, averageWdgTemp: endingAveWdgTemp, hotspotWdgTemp: endingHotspotTemperature, hotSpotLocationPU: startingTemps.hotSpotLocationPU, topOilTempInDucts: endingTopOilInDuctsTemp, topOilTempInTankAndRads: endingTopOilTemperature, bottomOilTemp: endingBottomOilTemperature)
         
         return endingTemps
     }
