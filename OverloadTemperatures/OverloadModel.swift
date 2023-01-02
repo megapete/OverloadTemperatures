@@ -10,7 +10,7 @@ import Foundation
 class OverloadModel {
     
     // We define two different kva bases because the BASIC program in C57.91 does that (needed for testing). This is probably useless for a manufacturer
-    // kVA used for tested (or calculated) temperatures
+    // kVA used for tested (or calculated) temperatures. (NOTE: This is also the "rated" kVA - the losses need to be corrected to this kVA in the routines that require "rated" losses)
     let kvaBaseForTemperatures:Double
     // kVA used for tested (or calculated) losses
     let kvaBaseForLoss:Double
@@ -27,7 +27,7 @@ class OverloadModel {
     // winding conductor
     let conductorType:C57_91_ConductorType
     
-    // tested or calculated temperatures at kvaBaseForTemperatures
+    // tested or calculated temperatures at kvaBaseForTemperatures ("rated")
     var testedTemperatures:Temperatures
     // tested or calculated losses at kvaBaseForLoss
     var testedLosses:Losses
@@ -223,7 +223,7 @@ class OverloadModel {
         
         var endingTemps:Temperatures = Temperatures()
         
-        // BASIC program uses PL as the variable name for the "PU Load" instead of th emore familiar "K", which we use here
+        // BASIC program uses PL as the variable name for the "PU Load" instead of the more familiar "K", which we use here
         let currentK = loadCycle.puLoad + loadSlope * (atTime - loadCycle.cycleStartTime * 60.0)
         let endingAmbient = startingTemps.ambientTemperature + ambientSlope * (atTime - loadCycle.cycleStartTime * 60.0)
         
@@ -247,21 +247,21 @@ class OverloadModel {
         let endingTopOverBottomRise = Delta_Theta_DOoverBO(heatLostByWdgs, X, atTime - lastTime, corrLoss.windingResistiveLoss, corrLoss.windingEddyLoss, self.testedTemperatures.topFluidTemperatureInCoolingDucts, self.testedTemperatures.bottomFluidTemperature)
         
         // line 1790: update the average and top oil in the ducts
-        let endingTopOilInDuctsTemp = startingTemps.bottomFluidTemperature + endingTopOverBottomRise
+        var endingTopOilInDuctsTemp = startingTemps.bottomFluidTemperature + endingTopOverBottomRise
         let endingAverageOilInDuctsTemp = (startingTemps.bottomFluidTemperature + endingTopOilInDuctsTemp) / 2.0
         
         // line 1800: update the temperature of oil adjacent to the hotspot, but then // line 1810: If (FluidTempAtTopOfDuct + 0.1)<TopFluidTempInTankAndRads then set TempOfOilAdjacentToHotSpot to TopFluidTempInTankAndRads. This looks like a fudge to make sure that the temperature of oil adjacent to the hotspot is at least as high as the top oil in the tank (probably to avoid it going too low during low load conditions).
         let endingOilAdjacentToHotpsotTemp = (endingTopOilInDuctsTemp + 0.1) < startingTemps.topFluidTemperatureInTankAndRads ? startingTemps.topFluidTemperatureInTankAndRads : startingTemps.bottomFluidTemperature + testedTemperatures.hotSpotLocationPU * endingTopOverBottomRise
         
         // Line 1820-1830: If hotspot temp is less than average winding temp and temp of oil adjacent to hotspot, set it to the higher of the two
-        let startingHotspotTemp = max(startingTemps.hotSpotWindingTemperature, endingAveWdgTemp, endingOilAdjacentToHotpsotTemp)
+        let fixedHotspotTemp = max(startingTemps.hotSpotWindingTemperature, endingAveWdgTemp, endingOilAdjacentToHotpsotTemp)
         
         // Line 1840: Calculate heat generated at hot spot
-        let corrHsLoss = self.testedLosses.LossesAtLoadAndTemperature(K: lossK, newTemp: startingHotspotTemp)
+        let corrHsLoss = self.testedLosses.LossesAtLoadAndTemperature(K: lossK, newTemp: fixedHotspotTemp)
         let heatGeneratedByHotspot = (atTime - lastTime) * corrHsLoss.windingHotspotLoss
         
         // Line 1850-1890: Calculate the viscosity and heat lost for hot-spot depending on the cooling mode
-        let heatLostByHotspot = QLOST_HS(self.coolingMode, ratedLoss.windingHotspotEddyLoss, ratedLoss.windingResistiveLoss, startingHotspotTemp, self.testedTemperatures.hotSpotWindingTemperature, endingOilAdjacentToHotpsotTemp, self.testedTemperatures.hotSpotFluidTemperature, atTime - lastTime, MU(self.fluidType, (startingHotspotTemp + endingOilAdjacentToHotpsotTemp) / 2.0), FluidViscosity(atTemps: self.testedTemperatures).hotspotVisc)
+        let heatLostByHotspot = QLOST_HS(self.coolingMode, ratedLoss.windingHotspotEddyLoss, ratedLoss.windingResistiveLoss, fixedHotspotTemp, self.testedTemperatures.hotSpotWindingTemperature, endingOilAdjacentToHotpsotTemp, self.testedTemperatures.hotSpotFluidTemperature, atTime - lastTime, MU(self.fluidType, (fixedHotspotTemp + endingOilAdjacentToHotpsotTemp) / 2.0), FluidViscosity(atTemps: self.testedTemperatures).hotspotVisc)
         
         // Line 1900: Calculate the winding hotspot temp
         let endingHotspotTemperature = Theta_H_2(heatGeneratedByHotspot, heatLostByHotspot, self.MCp_Wdg, startingTemps.hotSpotWindingTemperature)
@@ -276,7 +276,19 @@ class OverloadModel {
         // Line 1930-1960: Calculate heat generated by core (the method depends on whether or not we are considering core overexcitation)
         let heatGeneratedByCore = (atTime - lastTime) * (withCoreOverExcitation ? ratedLoss.coreLoss : ratedLoss.coreLossWithOverexcitation)
         
+        // Line 1970: Calculate average fluid temp in tank & rads
+        let endingAverageOilInTankAndRadsTemp = Theta_AO_2(heatLostByWdgs, heatGeneratedByStrayLoss, heatGeneratedByCore, heatLostToAmbient, startingTemps.averageFluidTemperatureInTankAndRads, self.SumM_Cp)
         
+        let Z:Double = self.zExponent == nil ? AppController.Z[Int(self.coolingMode.rawValue)] : self.zExponent!
+        // Line 1980: Calculate temp rise of fluid at top of tank & rads over bottom fluid
+        let endingTopOilRiseOverBottomOilInTankAndRads = Delta_Theta_ToverB(heatLostToAmbient, ratedLoss.totalLoss(withOverExcitation: withCoreOverExcitation), atTime - lastTime, Z, self.testedTemperatures.topFluidTemperatureInTankAndRads, self.testedTemperatures.bottomFluidTemperature)
+        
+        // Line 1990-2000: Calculate top & bottom fluid temp in tank & rads. If bottom oil is less than ambient, set it to the ambient.
+        let endingTopOilTemperature = Theta_TO(endingAverageOilInTankAndRadsTemp, endingTopOilRiseOverBottomOilInTankAndRads)
+        let endingBottomOilTemperature = max(endingAmbient, Theta_BO(endingAverageOilInTankAndRadsTemp, endingTopOilRiseOverBottomOilInTankAndRads))
+        
+        // Line 2010: If the fluid temp at the top of the duct is less than fluid temp at the bottom, set it to the temp at the bottom
+        endingTopOilInDuctsTemp = max(endingTopOilInDuctsTemp, endingBottomOilTemperature)
         
         return endingTemps
     }
