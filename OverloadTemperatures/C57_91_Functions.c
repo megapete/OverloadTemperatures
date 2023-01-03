@@ -629,6 +629,11 @@ bool TestStability(bool useSimplified, C57_91_CoolingType cType, double tau_W, d
         for (int i=AVERAGE; i<=HOTSPOT; i++) {
             
             checkValue[i] = pow((wdgTemp_1[i] - oilTemp_1[i]) / (wdgTemp_R[i] - oilTemp_R[i]), 0.25) * pow(viscosity_R[i] / viscosity_1[i], 0.25);
+            
+            if (checkValue[i] <= 0.0) {
+                
+                checkValue[i] = 1.0E-12;
+            }
         }
     }
     
