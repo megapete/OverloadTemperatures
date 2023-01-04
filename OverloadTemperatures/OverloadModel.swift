@@ -169,12 +169,12 @@ class OverloadModel {
         // endTime is in minutes
         let endTime = lastLoadCycle.cycleStartTime * 60.0
         
-        var wdgTempR = [self.testedTemperatures.averageWindingTemperature, self.testedTemperatures.hotSpotWindingTemperature]
+        var wdgTempR = [self.testedTemperatures.ratedAverageWindingTemperature, self.testedTemperatures.hotSpotWindingTemperature]
         var oilTempR = [self.testedTemperatures.averageFluidTemperatureInCoolingDucts, self.testedTemperatures.hotSpotFluidTemperature]
         // line 1320-133 of the BASIC program says to use the average of the winding and oil temps for viscosity calcs
         //var oilViscR = [MU(self.fluidType, (wdgTempR[0] + oilTempR[0]) / 2.0), MU(self.fluidType, (wdgTempR[1] + oilTempR[1]) / 2.0)]
         let oilViscTuple = FluidViscosity(atTemps: self.testedTemperatures)
-        var oilViscR = [oilViscTuple.aveVisc, oilViscTuple.hotspotVisc]
+        var oilViscR = [MU(self.fluidType, (wdgTempR[0] + oilTempR[0]) / 2.0), oilViscTuple.hotspotVisc]
         
         var agingSum = 0.0
         // var finalTemps:Temperatures
@@ -250,6 +250,7 @@ class OverloadModel {
         // calculate the equivalent aging factor for the total time period
         let totalAgingFactor = agingSum / currentTime
         let finalTemps = CalculateTempsForLoadCycle(atTime: endTime, lastTime: endTime - currentDeltaT, startingTemps: currentTemps, loadCycle: lastLoadCycle, loadSlope: 0.0, ambientSlope: 0.0)
+        self.overloadData.append(IntermediateData(time: endTime, loadPU: lastLoadCycle.puLoad, temps: finalTemps))
         
         let cycleData = CycleData(intermediateData: self.overloadData, maxWdgHotspot: self.maxHotspot, maxTopOil: self.maxAverageOil, maxWdgAveTemp: self.maxAveWdgTemp, maxAverageOil: self.maxAverageOil, agingFactor: totalAgingFactor)
         
@@ -276,6 +277,7 @@ class OverloadModel {
         let corrLoss = self.testedLosses.LossesAtLoadAndTemperature(K: lossK, newTemp: startingTemps.averageWindingTemperature)
         let heatGeneratedByWdgs = (atTime - lastTime) * corrLoss.windingLoss
         let ratedLoss = self.testedLosses.LossesAtLoadAndTemperature(K: self.kVABaseForOverLoad / self.kvaBaseForLoss, newTemp: self.testedTemperatures.ratedAverageWindingRise + self.testedTemperatures.ambientTemperature)
+        let ratedHsLoss = self.testedLosses.LossesAtLoadAndTemperature(K: self.kVABaseForOverLoad / self.kvaBaseForLoss, newTemp: self.testedTemperatures.hotSpotWindingTemperature)
         
         var heatLostByWdgs = 0.0
         if startingTemps.averageWindingTemperature > startingTemps.averageFluidTemperatureInCoolingDucts {
@@ -305,7 +307,7 @@ class OverloadModel {
         let heatGeneratedByHotspot = (atTime - lastTime) * corrHsLoss.windingHotspotLoss
         
         // Line 1850-1890: Calculate the viscosity and heat lost for hot-spot depending on the cooling mode
-        let heatLostByHotspot = QLOST_HS(self.coolingMode, ratedLoss.windingHotspotEddyLoss, ratedLoss.windingResistiveLoss, fixedHotspotTemp, self.testedTemperatures.hotSpotWindingTemperature, endingOilAdjacentToHotspotTemp, self.testedTemperatures.hotSpotFluidTemperature, atTime - lastTime, MU(self.fluidType, (fixedHotspotTemp + endingOilAdjacentToHotspotTemp) / 2.0), FluidViscosity(atTemps: self.testedTemperatures).hotspotVisc)
+        let heatLostByHotspot = QLOST_HS(self.coolingMode, ratedHsLoss.windingHotspotEddyLoss, ratedHsLoss.windingResistiveLoss, fixedHotspotTemp, self.testedTemperatures.hotSpotWindingTemperature, endingOilAdjacentToHotspotTemp, self.testedTemperatures.hotSpotFluidTemperature, atTime - lastTime, MU(self.fluidType, (fixedHotspotTemp + endingOilAdjacentToHotspotTemp) / 2.0), FluidViscosity(atTemps: self.testedTemperatures).hotspotVisc)
         
         // Line 1900: Calculate the winding hotspot temp
         let endingHotspotTemperature = Theta_H_2(heatGeneratedByHotspot, heatLostByHotspot, self.MCp_Wdg, startingTemps.hotSpotWindingTemperature)

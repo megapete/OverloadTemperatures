@@ -13,6 +13,13 @@ struct Temperatures {
     
     var ratedAverageWindingRise:Double
     
+    var ratedAverageWindingTemperature:Double {
+        
+        get {
+            return self.ambientTemperature + self.ratedAverageWindingRise
+        }
+    }
+    
     var bottomFluidTemperature:Double
     var topFluidTemperatureInCoolingDucts:Double
     var topFluidTemperatureInTankAndRads:Double

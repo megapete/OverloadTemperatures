@@ -9,7 +9,7 @@
 #include <math.h>
 
 // Constant Global for the allowed fluids (from table G.2)
-const C57_91_FluidCharacteristics C57_91_StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL] = {{.Cp = 13.92, .D = 0.0013573, .G = 2797.3}, {.Cp = 11.49, .D = 0.12127, .G = 1782.3}, {.Cp = 14.55, .D = 0.00007343, .G = 4434.7},};
+const C57_91_FluidCharacteristics C57_91_StandardFluids[C57_91_FLUIDTYPE_LAST_ENTRY - MINERAL_OIL] = {{.Cp = 13.92, .D = 0.0013473, .G = 2797.3}, {.Cp = 11.49, .D = 0.12127, .G = 1782.3}, {.Cp = 14.55, .D = 0.00007343, .G = 4434.7},};
 
 const C57_91_ConductorCharacteristics C57_91_StandardConductors[2] = {{.Tk = 234.5, .Cp = 2.91}, {.Tk = 225.0, .Cp = 6.798}};
 
@@ -218,7 +218,7 @@ double Theta_W_2(double QGEN_W, double QLOST_W, double MCp_W, double theta_W_1) 
  */
 double Delta_Theta_DOoverBO(double QLOST_W, double x, double delta_T, double Pw, double Pe, double theta_TDO_R, double theta_BO_R) {
     
-    double result = pow(QLOST_W / (delta_T * (Pw + Pw)), x) * (theta_TDO_R - theta_BO_R);
+    double result = pow(QLOST_W / (delta_T * (Pw + Pe)), x) * (theta_TDO_R - theta_BO_R);
     
     return result;
 }
