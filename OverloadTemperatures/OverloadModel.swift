@@ -160,7 +160,6 @@ class OverloadModel {
         self.maxHotspot = MaxTemp(temp: currentTemps.hotSpotWindingTemperature, time: 0.0)
         self.maxAverageOil = MaxTemp(temp: currentTemps.averageFluidTemperatureInCoolingDucts, time: 0.0)
         self.overloadData.append(IntermediateData(time: 0.0, loadPU: 1.0, temps: currentTemps))
-        var nextDataSavedTime = saveInterval * 60.0
         
         var currentDeltaT = 0.5 // minutes
         var maxDeltaT = 0.0
@@ -223,14 +222,14 @@ class OverloadModel {
                     self.maxAveWdgTemp = MaxTemp(temp: newTemps.averageWindingTemperature, time: currentTime)
                 }
                 
-                if newTemps.averageFluidTemperatureInCoolingDucts > self.maxAverageOil.temp {
+                if newTemps.averageFluidTemperatureInTankAndRads > self.maxAverageOil.temp {
                     
                     self.maxAverageOil = MaxTemp(temp: newTemps.averageFluidTemperatureInCoolingDucts, time: currentTime)
                 }
                 
-                if newTemps.topFluidTemperatureInCoolingDucts > self.maxTopOil.temp {
+                if newTemps.topFluidTemperatureInTankAndRads > self.maxTopOil.temp {
                     
-                    self.maxTopOil = MaxTemp(temp: newTemps.topFluidTemperatureInCoolingDucts, time: currentTime)
+                    self.maxTopOil = MaxTemp(temp: newTemps.topFluidTemperatureInTankAndRads, time: currentTime)
                 }
                 
                 currentTemps = newTemps
@@ -258,7 +257,7 @@ class OverloadModel {
         let finalTemps = CalculateTempsForLoadCycle(atTime: endTime, lastTime: endTime - currentDeltaT, startingTemps: currentTemps, loadCycle: lastLoadCycle, loadSlope: 0.0, ambientSlope: 0.0)
         self.overloadData.append(IntermediateData(time: endTime, loadPU: lastLoadCycle.puLoad, temps: finalTemps))
         
-        let cycleData = CycleData(intermediateData: self.overloadData, useOverExcitation: withCoreOverExcitation, maxWdgHotspot: self.maxHotspot, maxTopOil: self.maxAverageOil, maxWdgAveTemp: self.maxAveWdgTemp, maxAverageOil: self.maxAverageOil, agingFactor: totalAgingFactor)
+        let cycleData = CycleData(intermediateData: self.overloadData, useOverExcitation: withCoreOverExcitation, maxWdgHotspot: self.maxHotspot, maxTopOil: self.maxTopOil, maxWdgAveTemp: self.maxAveWdgTemp, maxAverageOil: self.maxAverageOil, agingFactor: totalAgingFactor)
         
         self.lastCycle = cycleData
         
@@ -423,7 +422,7 @@ class OverloadModel {
         result += "Temp".CenterInSpace(width: columnWidth)
         result += "Temp".CenterInSpace(width: columnWidth)
         result += "\n"
-        for i in 0..<7 {
+        for _ in 0..<7 {
             result += "==========".CenterInSpace(width: columnWidth)
         }
         result += "\n\n"
@@ -450,7 +449,13 @@ class OverloadModel {
         
         paddingLength = 20
         result += String(format: "%@ = %0.1f at %0.1f hours\n", "Max. Hotspot Temp.".padding(toLength: paddingLength, withPad: " ", startingAt: 0), olCycle.maxWdgHotspot.temp, olCycle.maxWdgHotspot.time / 60)
-        result += String(format: "%@ = %0.1f at %0.1f hours\n", "Max. Top Fluid Temp.".padding(toLength: paddingLength, withPad: " ", startingAt: 0), olCycle.maxTopOil.temp, olCycle.maxTopOil.time / 60)
+        result += String(format: "%@ = %0.1f at %0.1f hours\n\n", "Max. Top Fluid Temp.".padding(toLength: paddingLength, withPad: " ", startingAt: 0), olCycle.maxTopOil.temp, olCycle.maxTopOil.time / 60)
+        
+        let cycleDuration = olCycle.intermediateData.last!.time / 60.0
+        let equAging = olCycle.agingFactor * cycleDuration
+        result += String(format: "%@ = %0.2f hours\n", "Equivalent Aging".padding(toLength: paddingLength, withPad: " ", startingAt: 0), equAging)
+        result += String(format: "%@ = %0.2f hours\n", "Load Cycle Duration".padding(toLength: paddingLength, withPad: " ", startingAt: 0), cycleDuration)
+        result += String(format: "%@ = %0.2f hours\n", "Equivalent Aging Factor".padding(toLength: paddingLength, withPad: " ", startingAt: 0), olCycle.agingFactor)
         
         return result
     }
