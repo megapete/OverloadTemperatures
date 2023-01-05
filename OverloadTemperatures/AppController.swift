@@ -62,7 +62,11 @@ class AppController: NSObject {
         
         let result = model.DoOverloadCalculations(loadCycles: loadCycles, saveInterval: 0.5)
         
-        print("Max hotspot temp of \(result.maxWdgHotspot.temp)°C occurs at \(result.maxWdgHotspot.time / 60.0) hours")
+        print(model.OutputAsString())
+        
+        // print("Max hotspot temp of \(result.maxWdgHotspot.temp)°C occurs at \(result.maxWdgHotspot.time / 60.0) hours")
     }
+    
+    
     
 }

@@ -70,6 +70,8 @@ class OverloadModel {
         
         let intermediateData:[IntermediateData]
         
+        let useOverExcitation:Bool
+        
         let maxWdgHotspot:MaxTemp
         let maxTopOil:MaxTemp
         let maxWdgAveTemp:MaxTemp
@@ -81,12 +83,16 @@ class OverloadModel {
             
             let nullTemp = MaxTemp(temp: -100.0, time: -100.0)
             
-            return CycleData(intermediateData: [], maxWdgHotspot: nullTemp, maxTopOil: nullTemp, maxWdgAveTemp: nullTemp, maxAverageOil: nullTemp, agingFactor: -100.0)
+            return CycleData(intermediateData: [], useOverExcitation: false, maxWdgHotspot: nullTemp, maxTopOil: nullTemp, maxWdgAveTemp: nullTemp, maxAverageOil: nullTemp, agingFactor: -100.0)
         }
     }
     
     var overloadData:[IntermediateData] = []
+    
+    // how often to output data, in hours
     let dataInterval:Double
+    
+    var lastCycle:CycleData? = nil
     
     // sum of masses times specific heats
     var SumM_Cp:Double {
@@ -105,7 +111,7 @@ class OverloadModel {
         }
     }
     
-    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, kVABaseForOverLoad:Double, coolingMode:C57_91_CoolingType, fluidType:C57_91_FluidType, conductorType:C57_91_ConductorType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double, windingTau:Double = 5.0, dataInterval:Double = 0.5) {
+    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, kVABaseForOverLoad:Double, coolingMode:C57_91_CoolingType, fluidType:C57_91_FluidType, conductorType:C57_91_ConductorType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double, windingTau:Double = 5.0, dataInterval:Double = 1.0) {
         
         self.kvaBaseForTemperatures = kvaBaseForTemperatures
         self.kvaBaseForLoss = kvaBaseForLoss
@@ -121,6 +127,8 @@ class OverloadModel {
         self.massOfWindings = massOfWinding
         self.windingTau = windingTau
         self.dataInterval = dataInterval
+        self.overloadData = []
+        self.lastCycle = nil
     }
     
     /// Do the overload calculations using the given load cycles.
@@ -201,12 +209,10 @@ class OverloadModel {
                 let agingAccelerationFactor = exp(agingExponent)
                 agingSum += agingAccelerationFactor * currentDeltaT
                 
-                if currentTime >= nextDataSavedTime {
+                // save everything
+                let currentK = currentLoadCycle.puLoad + loadSlope * (currentTime - currentLoadCycle.cycleStartTime * 60.0)
+                self.overloadData.append(IntermediateData(time: currentTime, loadPU: currentK, temps: newTemps))
                     
-                    self.overloadData.append(IntermediateData(time: currentTime, loadPU: currentLoadCycle.puLoad, temps: newTemps))
-                    nextDataSavedTime += saveInterval
-                }
-                
                 if newTemps.hotSpotWindingTemperature > self.maxHotspot.temp {
                     
                     self.maxHotspot = MaxTemp(temp: newTemps.hotSpotWindingTemperature, time: currentTime)
@@ -252,7 +258,9 @@ class OverloadModel {
         let finalTemps = CalculateTempsForLoadCycle(atTime: endTime, lastTime: endTime - currentDeltaT, startingTemps: currentTemps, loadCycle: lastLoadCycle, loadSlope: 0.0, ambientSlope: 0.0)
         self.overloadData.append(IntermediateData(time: endTime, loadPU: lastLoadCycle.puLoad, temps: finalTemps))
         
-        let cycleData = CycleData(intermediateData: self.overloadData, maxWdgHotspot: self.maxHotspot, maxTopOil: self.maxAverageOil, maxWdgAveTemp: self.maxAveWdgTemp, maxAverageOil: self.maxAverageOil, agingFactor: totalAgingFactor)
+        let cycleData = CycleData(intermediateData: self.overloadData, useOverExcitation: withCoreOverExcitation, maxWdgHotspot: self.maxHotspot, maxTopOil: self.maxAverageOil, maxWdgAveTemp: self.maxAveWdgTemp, maxAverageOil: self.maxAverageOil, agingFactor: totalAgingFactor)
+        
+        self.lastCycle = cycleData
         
         return cycleData
     }
@@ -341,9 +349,117 @@ class OverloadModel {
         return endingTemps
     }
     
+    /// Output the current model (including any overload data) as a String (suitable for saving to a text file)
+    public func OutputAsString() -> String {
+        
+        var result:String = "Transformer Overload Temperature Data\n\n"
+        
+        var paddingLength = 40
+        result += String(format: "%@ = %0.f\n", "kVA Base for Loss Input Data".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.kvaBaseForLoss)
+        result += String(format: "%@ = %0.f °C\n", "Temperature Base for Loss Input Data".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedLosses.referenceTemperature)
+        result += String(format: "%@ = %0.f W\n", "Winding I2R Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedLosses.windingResistiveLoss)
+        result += String(format: "%@ = %0.f W\n", "Winding Eddy Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedLosses.windingEddyLoss)
+        result += String(format: "%@ = %0.f W\n", "Stray Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedLosses.strayLoss)
+        result += String(format: "%@ = %0.f W\n", "Core Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedLosses.coreLoss)
+        result += String(format: "%@ = %0.f W\n\n", "Total Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedLosses.totalLoss(withOverExcitation: false))
+        
+        let conductor = self.conductorType == .CU ? "Copper" : "Aluminum"
+        result += "Winding conductor is \(conductor)\n\n"
+        
+        result += String(format: "%@ = %0.f\n", "Per Unit Eddy Loss at Hotspot Location".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedLosses.windingHotspotEddyLossPU)
+        result += String(format: "%@ = %0.f minutes\n", "Winding Time Constant".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.windingTau)
+        result += String(format: "%@ = %0.f\n\n", "Per Unit Winding Height to Hotspot".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedTemperatures.hotSpotLocationPU)
+        
+        result += String(format: "%@ = %0.f lbs\n", "Weight of Core/Coils".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.massOfCore + self.massOfWindings)
+        result += String(format: "%@ = %0.f lbs\n", "Weight of Tank & Fittings".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.massOfTank)
+        let fluidString = self.fluidType == .MINERAL_OIL ? "Transformer Oil" : (self.fluidType == .SILICON_OIL ? "Silicon Oil" : "HTHC")
+        result += String(format: "%@ = %0.f lbs\n\n", "Gallons of \(fluidString)".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.massOfFluid / (231 * 0.031621))
+        
+        result += "Assumptions for Overload Tests\n"
+        result += String(format: "%@ = %.f kVA\n", "One Per Unit Load (Rated Load)".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.kvaBaseForTemperatures)
+        let coolingString = self.coolingMode == .ONAN ? "ONAN" : (self.coolingMode == .ONAF ? "ONAF" : (self.coolingMode == .OFAF ? "OFAF" : "ODAF"))
+        result += coolingString + " Cooling\n"
+        let N:Double = self.yExponent == nil ? AppController.Y[Int(self.coolingMode.rawValue)] : self.yExponent!
+        result += "Exponent of Losses for Average Fluid Rise is \(N)"
+        let ratedTemp = self.testedTemperatures.ambientTemperature + self.testedTemperatures.ratedAverageWindingRise
+        let ratedLosses = self.testedLosses.LossesAtLoadAndTemperature(K: self.kvaBaseForTemperatures / self.kvaBaseForLoss, newTemp: ratedTemp)
+        result += String(format: "%@ = %0.f W\n", "Winding I2R Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), ratedLosses.windingResistiveLoss)
+        result += String(format: "%@ = %0.f W\n", "Winding Eddy Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), ratedLosses.windingEddyLoss)
+        result += String(format: "%@ = %0.f W\n", "Stray Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), ratedLosses.strayLoss)
+        result += String(format: "%@ = %0.f W\n", "Core Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), ratedLosses.coreLoss)
+        result += String(format: "%@ = %0.f W\n\n", "Total Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), ratedLosses.totalLoss(withOverExcitation: false))
+        
+        result += "Temperature Data at \(self.kvaBaseForTemperatures) kVA:\n"
+        result += String(format: "%@ = %0.1f °C\n", "Rated Average Winding Rise Over Ambient".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedTemperatures.ratedAverageWindingRise)
+        result += String(format: "%@ = %0.1f °C\n", "Tested Average Winding Rise Over Ambient".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedTemperatures.averageWindingTemperature - self.testedTemperatures.ambientTemperature)
+        result += String(format: "%@ = %0.1f °C\n", "Hotspot Rise Over Ambient".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedTemperatures.hotSpotWindingTemperature - self.testedTemperatures.ambientTemperature)
+        result += String(format: "%@ = %0.1f °C\n", "Top Fluid Rise Over Ambient".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedTemperatures.topFluidTemperatureInTankAndRads - self.testedTemperatures.ambientTemperature)
+        result += String(format: "%@ = %0.1f °C\n", "Bottom Fluid Rise Over Ambient".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedTemperatures.bottomFluidTemperature - self.testedTemperatures.ambientTemperature)
+        result += String(format: "%@ = %0.1f °C\n\n", "Rated Ambient Temperature".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedTemperatures.ambientTemperature)
+        
+        guard let olCycle = self.lastCycle else {
+            
+            result += "No overload data available!"
+            
+            return result
+        }
+        
+        result += olCycle.useOverExcitation ? "Core overexcitation is used\n\n" : "Core overexcitation does not occur\n\n"
+        
+        let columnWidth = 12
+        result += "Time".CenterInSpace(width: columnWidth)
+        result += " ".CenterInSpace(width: columnWidth)
+        result += "Amb".CenterInSpace(width: columnWidth)
+        result += "HotSpot".CenterInSpace(width: columnWidth)
+        result += "TopOil".CenterInSpace(width: columnWidth)
+        result += "TopDuct".CenterInSpace(width: columnWidth)
+        result += "BotOil".CenterInSpace(width: columnWidth)
+        result += "\n"
+        result += "(Hours)".CenterInSpace(width: columnWidth)
+        result += "PU Load".CenterInSpace(width: columnWidth)
+        result += "Temp".CenterInSpace(width: columnWidth)
+        result += "Temp".CenterInSpace(width: columnWidth)
+        result += "Temp".CenterInSpace(width: columnWidth)
+        result += "Temp".CenterInSpace(width: columnWidth)
+        result += "Temp".CenterInSpace(width: columnWidth)
+        result += "\n"
+        for i in 0..<7 {
+            result += "==========".CenterInSpace(width: columnWidth)
+        }
+        result += "\n\n"
+        
+        var nextDataTime = 0.0
+        for nextIntData in olCycle.intermediateData {
+            
+            if nextIntData.time >= nextDataTime {
+                
+                result += String(format: "%0.1f", nextIntData.time / 60).CenterInSpace(width: columnWidth)
+                result += String(format: "%0.3f", nextIntData.loadPU).CenterInSpace(width: columnWidth)
+                result += String(format: "%0.1f", nextIntData.temps.ambientTemperature).CenterInSpace(width: columnWidth)
+                result += String(format: "%0.1f", nextIntData.temps.hotSpotWindingTemperature).CenterInSpace(width: columnWidth)
+                result += String(format: "%0.1f", nextIntData.temps.topFluidTemperatureInTankAndRads).CenterInSpace(width: columnWidth)
+                result += String(format: "%0.1f", nextIntData.temps.topFluidTemperatureInCoolingDucts).CenterInSpace(width: columnWidth)
+                result += String(format: "%0.1f", nextIntData.temps.bottomFluidTemperature).CenterInSpace(width: columnWidth)
+                result += "\n"
+                
+                nextDataTime += self.dataInterval * 60.0
+            }
+        }
+        
+        result += "\n"
+        
+        paddingLength = 20
+        result += String(format: "%@ = %0.1f at %0.1f hours\n", "Max. Hotspot Temp.".padding(toLength: paddingLength, withPad: " ", startingAt: 0), olCycle.maxWdgHotspot.temp, olCycle.maxWdgHotspot.time / 60)
+        result += String(format: "%@ = %0.1f at %0.1f hours\n", "Max. Top Fluid Temp.".padding(toLength: paddingLength, withPad: " ", startingAt: 0), olCycle.maxTopOil.temp, olCycle.maxTopOil.time / 60)
+        
+        return result
+    }
+    
+    
+    
     /// Get the oil viscosity at the average temperature and hotspot location
     /// - Parameter atTemps: the temperatures at which to do the calculation
-    /// - Returns: An tuple of Double, where the first element is the average viscosity and the second is the viscosity at the hotspot
+    /// - Returns: A tuple of Double, where the first element is the average viscosity and the second is the viscosity at the hotspot
     func FluidViscosity(atTemps:Temperatures) -> (aveVisc:Double, hotspotVisc:Double) {
         
         let wdgTemp = [atTemps.averageWindingTemperature, atTemps.hotSpotWindingTemperature]
@@ -352,4 +468,21 @@ class OverloadModel {
         return (MU(self.fluidType, (wdgTemp[0] + oilTemp[0]) / 2.0), MU(self.fluidType, (wdgTemp[1] + oilTemp[1]) / 2.0))
     }
     
+}
+
+extension String {
+    
+    
+    func CenterInSpace(width:Int) -> String {
+        
+        if width < self.count {
+            
+            return "BLAH!"
+        }
+        
+        let leftPadding:Int = (width - self.count) / 2
+        let result:String = ("".padding(toLength: leftPadding, withPad: " ", startingAt: 0) + self).padding(toLength: width, withPad: " ", startingAt: 0)
+        
+        return result
+    }
 }
