@@ -169,9 +169,9 @@ class OverloadModel {
             currentDeltaT = maxDeltaT
         }
         
-        // lastTime and currentTime are in minutes
-        var lastTime = 0.0
-        var currentTime = currentDeltaT
+        // lastTime and currentTime are in minutes. We need to set the lastTime to -deltaT so that we can process the current time of '0'
+        var lastTime = -currentDeltaT
+        var currentTime = 0.0
         var currentLoadCycleIndex = 0
         // endTime is in minutes
         let endTime = lastLoadCycle.cycleStartTime * 60.0
@@ -365,21 +365,21 @@ class OverloadModel {
         let conductor = self.conductorType == .CU ? "Copper" : "Aluminum"
         result += "Winding conductor is \(conductor)\n\n"
         
-        result += String(format: "%@ = %0.f\n", "Per Unit Eddy Loss at Hotspot Location".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedLosses.windingHotspotEddyLossPU)
+        result += String(format: "%@ = %0.3f\n", "Per Unit Eddy Loss at Hotspot Location".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedLosses.windingHotspotEddyLossPU)
         result += String(format: "%@ = %0.f minutes\n", "Winding Time Constant".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.windingTau)
         result += String(format: "%@ = %0.f\n\n", "Per Unit Winding Height to Hotspot".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.testedTemperatures.hotSpotLocationPU)
         
         result += String(format: "%@ = %0.f lbs\n", "Weight of Core/Coils".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.massOfCore + self.massOfWindings)
         result += String(format: "%@ = %0.f lbs\n", "Weight of Tank & Fittings".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.massOfTank)
         let fluidString = self.fluidType == .MINERAL_OIL ? "Transformer Oil" : (self.fluidType == .SILICON_OIL ? "Silicon Oil" : "HTHC")
-        result += String(format: "%@ = %0.f lbs\n\n", "Gallons of \(fluidString)".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.massOfFluid / (231 * 0.031621))
+        result += String(format: "%@ = %0.f USG\n\n", "Gallons of \(fluidString)".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.massOfFluid / (231 * 0.031621))
         
         result += "Assumptions for Overload Tests\n"
         result += String(format: "%@ = %.f kVA\n", "One Per Unit Load (Rated Load)".padding(toLength: paddingLength, withPad: " ", startingAt: 0), self.kvaBaseForTemperatures)
         let coolingString = self.coolingMode == .ONAN ? "ONAN" : (self.coolingMode == .ONAF ? "ONAF" : (self.coolingMode == .OFAF ? "OFAF" : "ODAF"))
         result += coolingString + " Cooling\n"
         let N:Double = self.yExponent == nil ? AppController.Y[Int(self.coolingMode.rawValue)] : self.yExponent!
-        result += "Exponent of Losses for Average Fluid Rise is \(N)"
+        result += "Exponent of Losses for Average Fluid Rise is \(N)\n"
         let ratedTemp = self.testedTemperatures.ambientTemperature + self.testedTemperatures.ratedAverageWindingRise
         let ratedLosses = self.testedLosses.LossesAtLoadAndTemperature(K: self.kvaBaseForTemperatures / self.kvaBaseForLoss, newTemp: ratedTemp)
         result += String(format: "%@ = %0.f W\n", "Winding I2R Loss".padding(toLength: paddingLength, withPad: " ", startingAt: 0), ratedLosses.windingResistiveLoss)

@@ -71,11 +71,12 @@ class AppController: NSObject {
         
         let loss = Losses(conductorType: .CU, referenceTemperature: 85.0, coreLoss: 4809.0, coreLossWithOverexcitation: 4809.0, windingResistiveLoss: 12360 + 15169, windingEddyLoss: 470 + 303, windingHotspotEddyLossPU: 0.061, strayLoss: 1205)
         
-        let temperature = Temperatures(ambientTemperature: 30.0, ratedAverageWdgTempRise: 65.0, averageWdgTempRise: 58.6, hotspotWdgTempRise: 70.6, hotSpotLocationPU: 1.0, topOilRiseInDucts: 56.1, topOilRiseInTankAndRads: 56.1, bottomOilRise: 33.7)
+        let testAmb = 29.0
+        let temperature = Temperatures(ambientTemperature: testAmb, ratedAverageWdgTempRise: 65.0, averageWdgTempRise: 58.6, hotspotWdgTempRise: 70.6, hotSpotLocationPU: 1.0, topOilRiseInDucts: 56.1, topOilRiseInTankAndRads: 56.1, bottomOilRise: 33.7)
         
         let model = OverloadModel(kvaBaseForTemperatures: 6000, kvaBaseForLoss: 6000, kVABaseForOverLoad: 6000, coolingMode: .ONAN, fluidType: .MINERAL_OIL, conductorType: .CU, testedTemperatures: temperature, initialTemperatures: nil, testedLosses: loss, massOfCore: 11627, massOfFluid: 5321 * 2.2, massOfTank: 7000 * 2.2, massOfWinding: 3630)
         
-        let loadCycles:[LoadCycle] = [LoadCycle(cycleStartTime: 0.0, ambient: 30.0, puLoad: 1.0), LoadCycle(cycleStartTime: 12.0, ambient: 30.0, puLoad: 1.0), LoadCycle(cycleStartTime: 12.0, ambient: 30.0, puLoad: 1.15), LoadCycle(cycleStartTime: 20.0, ambient: 30.0, puLoad: 1.15), LoadCycle(cycleStartTime: 20.0, ambient: 30.0, puLoad: 1.22), LoadCycle(cycleStartTime: 24.0, ambient: 30.0, puLoad: 1.22), LoadCycle(cycleStartTime: 24.0, ambient: 30.0, puLoad: 1.0)]
+        let loadCycles:[LoadCycle] = [LoadCycle(cycleStartTime: 0.0, ambient: testAmb, puLoad: 1.0), LoadCycle(cycleStartTime: 0.5 / 60, ambient: 30.0, puLoad: 1.0), LoadCycle(cycleStartTime: 12.0, ambient: 30.0, puLoad: 1.0), LoadCycle(cycleStartTime: 12.0, ambient: 30.0, puLoad: 1.15), LoadCycle(cycleStartTime: 20.0, ambient: 30.0, puLoad: 1.15), LoadCycle(cycleStartTime: 20.0, ambient: 30.0, puLoad: 1.22), LoadCycle(cycleStartTime: 24.0, ambient: 30.0, puLoad: 1.22), LoadCycle(cycleStartTime: 24.0, ambient: testAmb, puLoad: 1.0)]
         
         let result = model.DoOverloadCalculations(loadCycles: loadCycles, saveInterval: 0.25)
         
