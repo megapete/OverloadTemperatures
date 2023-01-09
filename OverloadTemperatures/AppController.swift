@@ -55,7 +55,7 @@ class AppController: NSObject {
         let massCore = massCoreAndCoil - massWdg
         let massOfFluid = 4910.0 * 231 * 0.031621
         
-        let model = OverloadModel(kvaBaseForTemperatures: 52267.0, kvaBaseForLoss: 28000.0, kVABaseForOverLoad: 52267.0, coolingMode: .ONAF, fluidType: .MINERAL_OIL, conductorType: .CU, testedTemperatures: temperature, testedLosses: loss, massOfCore: massCore, massOfFluid: massOfFluid, massOfTank: 31400, massOfWinding: massWdg)
+        let model = OverloadModel(kvaBaseForTemperatures: 52267.0, kvaBaseForLoss: 28000.0, kVABaseForOverLoad: 52267.0, coolingMode: .ONAF, fluidType: .MINERAL_OIL, conductorType: .CU, testedTemperatures: temperature, initialTemperatures: nil, testedLosses: loss, massOfCore: massCore, massOfFluid: massOfFluid, massOfTank: 31400, massOfWinding: massWdg)
         
         // create an array of load cycles
         let loadCycles:[LoadCycle] = [LoadCycle(cycleStartTime: 0.0, ambient: 30.0, puLoad: 0.73), LoadCycle(cycleStartTime: 1.0, ambient: 29.5, puLoad: 0.64), LoadCycle(cycleStartTime: 6.0, ambient: 28.2, puLoad: 0.56), LoadCycle(cycleStartTime: 7.0, ambient: 29.8, puLoad: 0.62), LoadCycle(cycleStartTime: 10.0, ambient: 35.9, puLoad: 0.88), LoadCycle(cycleStartTime: 13.0, ambient: 39.6, puLoad: 1.03), LoadCycle(cycleStartTime: 14.0, ambient: 40.0, puLoad: 1.07), LoadCycle(cycleStartTime: 15.0, ambient: 40.0, puLoad: 1.1), LoadCycle(cycleStartTime:16.0, ambient: 39.6, puLoad: 1.1), LoadCycle(cycleStartTime: 18.0, ambient: 36.8, puLoad: 1.04), LoadCycle(cycleStartTime: 21.0, ambient: 32.5, puLoad: 0.88), LoadCycle(cycleStartTime: 24.0, ambient: 30.0, puLoad: 0.73)]
@@ -67,6 +67,22 @@ class AppController: NSObject {
         // print("Max hotspot temp of \(result.maxWdgHotspot.temp)°C occurs at \(result.maxWdgHotspot.time / 60.0) hours")
     }
     
+    @IBAction func handleT159_Summer(_ sender: Any) {
+        
+        let loss = Losses(conductorType: .CU, referenceTemperature: 85.0, coreLoss: 4809.0, coreLossWithOverexcitation: 4809.0, windingResistiveLoss: 12360 + 15169, windingEddyLoss: 470 + 303, windingHotspotEddyLossPU: 0.061, strayLoss: 1205)
+        
+        let temperature = Temperatures(ambientTemperature: 30.0, ratedAverageWdgTempRise: 65.0, averageWdgTempRise: 58.6, hotspotWdgTempRise: 70.6, hotSpotLocationPU: 1.0, topOilRiseInDucts: 56.1, topOilRiseInTankAndRads: 56.1, bottomOilRise: 33.7)
+        
+        let model = OverloadModel(kvaBaseForTemperatures: 6000, kvaBaseForLoss: 6000, kVABaseForOverLoad: 6000, coolingMode: .ONAN, fluidType: .MINERAL_OIL, conductorType: .CU, testedTemperatures: temperature, initialTemperatures: nil, testedLosses: loss, massOfCore: 11627, massOfFluid: 5321 * 2.2, massOfTank: 7000 * 2.2, massOfWinding: 3630)
+        
+        let loadCycles:[LoadCycle] = [LoadCycle(cycleStartTime: 0.0, ambient: 30.0, puLoad: 1.0), LoadCycle(cycleStartTime: 12.0, ambient: 30.0, puLoad: 1.0), LoadCycle(cycleStartTime: 12.0, ambient: 30.0, puLoad: 1.15), LoadCycle(cycleStartTime: 20.0, ambient: 30.0, puLoad: 1.15), LoadCycle(cycleStartTime: 20.0, ambient: 30.0, puLoad: 1.22), LoadCycle(cycleStartTime: 24.0, ambient: 30.0, puLoad: 1.22), LoadCycle(cycleStartTime: 24.0, ambient: 30.0, puLoad: 1.0)]
+        
+        let result = model.DoOverloadCalculations(loadCycles: loadCycles, saveInterval: 0.25)
+        
+        print(model.OutputAsString())
+    }
     
+    @IBAction func handleT159_Winter(_ sender: Any) {
+    }
     
 }

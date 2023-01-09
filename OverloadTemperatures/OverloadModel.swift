@@ -111,7 +111,7 @@ class OverloadModel {
         }
     }
     
-    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, kVABaseForOverLoad:Double, coolingMode:C57_91_CoolingType, fluidType:C57_91_FluidType, conductorType:C57_91_ConductorType, testedTemperatures:Temperatures, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double, windingTau:Double = 5.0, dataInterval:Double = 1.0) {
+    init(kvaBaseForTemperatures:Double, kvaBaseForLoss:Double, kVABaseForOverLoad:Double, coolingMode:C57_91_CoolingType, fluidType:C57_91_FluidType, conductorType:C57_91_ConductorType, testedTemperatures:Temperatures, initialTemperatures:Temperatures?, testedLosses:Losses, massOfCore:Double, massOfFluid:Double, massOfTank:Double, massOfWinding:Double, windingTau:Double = 5.0, dataInterval:Double = 1.0) {
         
         self.kvaBaseForTemperatures = kvaBaseForTemperatures
         self.kvaBaseForLoss = kvaBaseForLoss
