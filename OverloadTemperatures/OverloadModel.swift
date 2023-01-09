@@ -447,7 +447,7 @@ class OverloadModel {
         
         result += "\n"
         
-        paddingLength = 20
+        paddingLength = 30
         result += String(format: "%@ = %0.1f at %0.1f hours\n", "Max. Hotspot Temp.".padding(toLength: paddingLength, withPad: " ", startingAt: 0), olCycle.maxWdgHotspot.temp, olCycle.maxWdgHotspot.time / 60)
         result += String(format: "%@ = %0.1f at %0.1f hours\n\n", "Max. Top Fluid Temp.".padding(toLength: paddingLength, withPad: " ", startingAt: 0), olCycle.maxTopOil.temp, olCycle.maxTopOil.time / 60)
         
