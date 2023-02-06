@@ -475,19 +475,3 @@ class OverloadModel {
     
 }
 
-extension String {
-    
-    
-    func CenterInSpace(width:Int) -> String {
-        
-        if width < self.count {
-            
-            return "BLAH!"
-        }
-        
-        let leftPadding:Int = (width - self.count) / 2
-        let result:String = ("".padding(toLength: leftPadding, withPad: " ", startingAt: 0) + self).padding(toLength: width, withPad: " ", startingAt: 0)
-        
-        return result
-    }
-}
